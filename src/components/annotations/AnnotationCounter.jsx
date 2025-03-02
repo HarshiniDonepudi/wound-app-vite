@@ -118,6 +118,12 @@ const AnnotationCounter = ({ onClose }) => {
       
       // Add auth token to the request header
       const token = localStorage.getItem('token');
+      if (!token) {
+        setError('Authentication token not found. Please log in again.');
+        setLoading(false);
+        return;
+      }
+      
       const config = {
         headers: {
           'Authorization': `Bearer ${token}`
@@ -126,17 +132,24 @@ const AnnotationCounter = ({ onClose }) => {
       
       // Get the API endpoint for annotation counts
       const response = await axios.get('/api/annotations/count-by-category', config);
+      console.log('Annotation counts response:', response.data);
       
-      // Transform the data for display
-      const counts = response.data.map(item => ({
-        category: item.category,
-        count: item.count
-      }));
-      
-      setCategoryCounts(counts);
+      if (response.data && Array.isArray(response.data)) {
+        // Process the data to ensure it's in the right format
+        const counts = response.data.map(item => ({
+          category: item.category || "Uncategorized",
+          count: item.count || 0
+        }));
+        
+        setCategoryCounts(counts);
+      } else {
+        // Handle unexpected response format
+        console.error('Unexpected response format:', response.data);
+        setError('Received unexpected data format from server');
+      }
     } catch (err) {
       console.error('Error fetching annotation counts:', err);
-      setError('Failed to load annotation counts. Please try again.');
+      setError(`Failed to load annotation counts: ${err.message || 'Unknown error'}`);
     } finally {
       setLoading(false);
     }

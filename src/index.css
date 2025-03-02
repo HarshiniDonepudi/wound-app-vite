@@ -1945,3 +1945,268 @@ h3 {
 .register-login-link:hover {
   text-decoration: underline;
 }
+/* Wound List Table Styles - Add to your existing CSS */
+
+/* Row styling for annotated wounds */
+.wound-list-table__tr--annotated {
+  background-color: #d1fae5;  /* Light green background */
+}
+
+.wound-list-table__tr--annotated:hover {
+  background-color: #a7f3d0;  /* Slightly darker green on hover */
+}
+
+/* Status Badge Styles */
+.wound-list-status {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 8px;
+  border-radius: 9999px;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.wound-list-status--annotated {
+  background-color: #d1fae5;
+  color: #047857;
+}
+
+.wound-list-status--unannotated {
+  background-color: #f3f4f6;
+  color: #6b7280;
+}
+
+.wound-list-status-icon {
+  width: 16px;
+  height: 16px;
+  margin-right: 4px;
+}
+
+/* Filter Styles */
+.wound-list-filter-group {
+  margin-bottom: 16px;
+}
+
+.wound-list-filter-label {
+  font-size: 0.85rem;
+  margin-bottom: 4px;
+  color: #444;
+  display: block;
+}
+
+.wound-list-filter-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.wound-list-filter-option {
+  display: flex;
+  align-items: center;
+}
+
+.wound-list-filter-checkbox {
+  margin-right: 6px;
+}
+
+.wound-list-filter-checkbox-label {
+  font-size: 0.85rem;
+  color: #444;
+}
+
+/* Annotation Page Navigation */
+.annotation-nav-buttons {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-right: 16px;
+}
+
+.annotation-nav-counter {
+  font-size: 0.85rem;
+  color: #6b7280;
+  white-space: nowrap;
+}
+
+.btn__icon--right {
+  margin-left: 4px;
+  margin-right: 0;
+}
+
+.badge--amber {
+  background-color: #fbbf24;
+}
+
+/* Disabled button styles */
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Header badging */
+.page-badges {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.badge {
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  color: #fff;
+  white-space: nowrap;
+}
+
+.badge--blue {
+  background-color: #3b82f6;
+}
+
+.badge--green {
+  background-color: #10b981;
+}
+
+.badge--amber {
+  background-color: #f59e0b;
+}
+/* Add these styles to your CSS */
+
+/* Wound List Filters */
+.wound-list-filters {
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  margin-bottom: 24px;
+  overflow: hidden;
+  max-height: 0;
+  transition: max-height 0.3s ease;
+}
+
+.wound-list-filters--visible {
+  max-height: 256px;
+}
+
+.wound-list-filters-inner {
+  padding: 16px;
+}
+
+.wound-list-filter-group {
+  margin-top: 16px;
+}
+
+.wound-list-filter-label {
+  display: block;
+  font-size: 0.85rem;
+  margin-bottom: 8px;
+  color: #444;
+  font-weight: 500;
+}
+
+.wound-list-filter-options {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.wound-list-filter-option {
+  display: flex;
+  align-items: center;
+}
+
+.wound-list-filter-checkbox {
+  margin-right: 6px;
+}
+
+.wound-list-filter-checkbox-label {
+  font-size: 0.85rem;
+  color: #444;
+}
+
+/* Status Badge Styles */
+.wound-list-status {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 8px;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.wound-list-status--annotated {
+  background-color: #d1fae5;
+  color: #047857;
+}
+
+.wound-list-status--unannotated {
+  background-color: #f3f4f6;
+  color: #6b7280;
+}
+
+.wound-list-status-icon {
+  width: 14px;
+  height: 14px;
+  margin-right: 4px;
+}
+
+/* Row styling for annotated wounds */
+.wound-list-table__tr--annotated {
+  background-color: #d1fae5;  /* Light green background */
+}
+
+.wound-list-table__tr--annotated:hover {
+  background-color: #a7f3d0;  /* Slightly darker green on hover */
+}
+
+/* Improve table styling */
+.wound-list-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.wound-list-table__head {
+  background: #f9fafb;
+}
+
+.wound-list-table__th {
+  padding: 12px 16px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: #6b7280;
+  text-align: left;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.wound-list-table__td {
+  padding: 12px 16px;
+  border-bottom: 1px solid #e5e7eb;
+  vertical-align: middle;
+}
+
+.wound-list-annotate-link {
+  display: inline-block;
+  padding: 6px 12px;
+  background-color: #3b82f6;
+  color: white;
+  border-radius: 4px;
+  text-decoration: none;
+  font-size: 0.875rem;
+  transition: background-color 0.2s;
+}
+
+.wound-list-annotate-link:hover {
+  background-color: #2563eb;
+}
+
+/* Media queries for responsive layout */
+@media (max-width: 768px) {
+  .wound-list-filter-options {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .wound-list-table__th,
+  .wound-list-table__td {
+    padding: 8px;
+  }
+}

@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useAnnotations } from '../hooks/useAnnotations';
+import { getAllWounds } from '../services/woundService';
 
 // Import your annotation components
 import AnnotationCanvas from '../components/annotations/AnnotationCanvas';
@@ -10,9 +11,45 @@ import AnnotationCounter from '../components/annotations/AnnotationCounter';
 
 export default function AnnotationPage() {
   const { woundId } = useParams();
-  const { wound, loading, error, selectedAnnotation } = useAnnotations();
+  const { wound, loading, error, selectedAnnotation, annotations } = useAnnotations();
   const [showInfo, setShowInfo] = useState(true);
   const [showCounter, setShowCounter] = useState(false);
+  const [allWounds, setAllWounds] = useState([]);
+  const [currentWoundIndex, setCurrentWoundIndex] = useState(-1);
+  const navigate = useNavigate();
+
+  // Load all wounds for previous/next navigation
+  useEffect(() => {
+    const loadAllWounds = async () => {
+      try {
+        const wounds = await getAllWounds();
+        setAllWounds(wounds);
+        
+        // Find the index of the current wound
+        const index = wounds.findIndex(w => w.id.toString() === woundId.toString());
+        setCurrentWoundIndex(index);
+      } catch (err) {
+        console.error("Error loading all wounds:", err);
+      }
+    };
+    
+    loadAllWounds();
+  }, [woundId]);
+
+  // Navigation handlers
+  const goToPreviousWound = () => {
+    if (currentWoundIndex > 0) {
+      const previousWound = allWounds[currentWoundIndex - 1];
+      navigate(`/annotate/${previousWound.id}`);
+    }
+  };
+
+  const goToNextWound = () => {
+    if (currentWoundIndex < allWounds.length - 1) {
+      const nextWound = allWounds[currentWoundIndex + 1];
+      navigate(`/annotate/${nextWound.id}`);
+    }
+  };
 
   // Loading State
   if (loading) {
@@ -78,6 +115,11 @@ export default function AnnotationPage() {
                 Patient ID: {wound.patient_id}
               </span>
             )}
+            {annotations && annotations.length > 0 && (
+              <span className="badge badge--amber">
+                {annotations.length} Annotations
+              </span>
+            )}
           </div>
           {wound && (
             <p className="header-subtitle">
@@ -86,6 +128,45 @@ export default function AnnotationPage() {
           )}
         </div>
         <div className="annotation-header__right">
+          {/* Navigation buttons */}
+          <div className="annotation-nav-buttons">
+            <button
+              onClick={goToPreviousWound}
+              disabled={currentWoundIndex <= 0}
+              className="btn btn--outline"
+              title="Previous wound"
+            >
+              <svg className="btn__icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path 
+                  strokeLinecap="round" 
+                  strokeLinejoin="round" 
+                  strokeWidth="2" 
+                  d="M15 19l-7-7 7-7" 
+                />
+              </svg>
+              Previous
+            </button>
+            <span className="annotation-nav-counter">
+              {currentWoundIndex + 1} of {allWounds.length}
+            </span>
+            <button
+              onClick={goToNextWound}
+              disabled={currentWoundIndex >= allWounds.length - 1}
+              className="btn btn--outline"
+              title="Next wound"
+            >
+              Next
+              <svg className="btn__icon btn__icon--right" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path 
+                  strokeLinecap="round" 
+                  strokeLinejoin="round" 
+                  strokeWidth="2" 
+                  d="M9 5l7 7-7 7" 
+                />
+              </svg>
+            </button>
+          </div>
+          
           {/* Stats Button */}
           <button
             onClick={() => setShowCounter(!showCounter)}

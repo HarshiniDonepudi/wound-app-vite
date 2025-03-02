@@ -1,7 +1,6 @@
 import React from 'react';
 import { useAnnotations } from '../../hooks/useAnnotations';
 
-
 export default function AnnotationInfo() {
   const { selectedAnnotation, categoryColors } = useAnnotations();
 
@@ -63,6 +62,13 @@ export default function AnnotationInfo() {
               <div className="cell-value">{selectedAnnotation.body_map_id}</div>
             </div>
           )}
+          
+          {selectedAnnotation.severity && (
+            <div className="details-cell">
+              <div className="cell-label">Severity</div>
+              <div className="cell-value">{selectedAnnotation.severity}</div>
+            </div>
+          )}
 
           <div className="details-cell">
             <div className="cell-label">Position (x, y)</div>
@@ -92,6 +98,15 @@ export default function AnnotationInfo() {
               <div className="cell-value">
                 {selectedAnnotation.last_modified_by}
                 <span className="timestamp">{formatDate(selectedAnnotation.last_modified_at)}</span>
+              </div>
+            </div>
+          )}
+          
+          {selectedAnnotation.doctor_notes && (
+            <div className="details-cell details-cell--full">
+              <div className="cell-label">Doctor Notes</div>
+              <div className="cell-value cell-value--notes">
+                {selectedAnnotation.doctor_notes}
               </div>
             </div>
           )}

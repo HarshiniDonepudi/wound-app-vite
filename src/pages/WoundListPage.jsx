@@ -8,12 +8,16 @@ const WoundListPage = () => {
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterVisible, setFilterVisible] = useState(false);
+  const [showAnnotatedOnly, setShowAnnotatedOnly] = useState(false);
+  const [showUnannotatedOnly, setShowUnannotatedOnly] = useState(false);
 
   useEffect(() => {
     const loadWounds = async () => {
       try {
         setLoading(true);
+        console.log("Fetching wounds with annotation status...");
         const data = await getAllWounds();
+        console.log("Received wound data:", data);
         setWounds(data);
       } catch (err) {
         console.error('Error loading wounds:', err);
@@ -26,11 +30,18 @@ const WoundListPage = () => {
     loadWounds();
   }, []);
 
-  // Filter wounds based on search term
-  const filteredWounds = wounds.filter(wound =>
-    wound.path.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    wound.id.toString().includes(searchTerm)
-  );
+  // Filter wounds based on search term and annotation status
+  const filteredWounds = wounds.filter(wound => {
+    // Filter by search term
+    const matchesSearch = wound.path.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          wound.id.toString().includes(searchTerm);
+    
+    // Filter by annotation status
+    if (showAnnotatedOnly && !wound.annotated) return false;
+    if (showUnannotatedOnly && wound.annotated) return false;
+    
+    return matchesSearch;
+  });
 
   return (
     <div className="wound-list-container">
@@ -63,6 +74,7 @@ const WoundListPage = () => {
       {/* Search and filters */}
       <div className={`wound-list-filters ${filterVisible ? 'wound-list-filters--visible' : ''}`}>
         <div className="wound-list-filters-inner">
+          {/* Search filter */}
           <div className="wound-list-search-group">
             <label htmlFor="search" className="wound-list-search-label">
               Search Wounds
@@ -105,7 +117,43 @@ const WoundListPage = () => {
               )}
             </div>
           </div>
-          {/* Additional filters can be added here */}
+          
+          {/* Annotation status filter */}
+          <div className="wound-list-filter-group">
+            <label className="wound-list-filter-label">Annotation Status</label>
+            <div className="wound-list-filter-options">
+              <div className="wound-list-filter-option">
+                <input
+                  type="checkbox"
+                  id="annotated"
+                  checked={showAnnotatedOnly}
+                  onChange={() => {
+                    setShowAnnotatedOnly(!showAnnotatedOnly);
+                    if (!showAnnotatedOnly) setShowUnannotatedOnly(false);
+                  }}
+                  className="wound-list-filter-checkbox"
+                />
+                <label htmlFor="annotated" className="wound-list-filter-checkbox-label">
+                  Show annotated only
+                </label>
+              </div>
+              <div className="wound-list-filter-option">
+                <input
+                  type="checkbox"
+                  id="unannotated"
+                  checked={showUnannotatedOnly}
+                  onChange={() => {
+                    setShowUnannotatedOnly(!showUnannotatedOnly);
+                    if (!showUnannotatedOnly) setShowAnnotatedOnly(false);
+                  }}
+                  className="wound-list-filter-checkbox"
+                />
+                <label htmlFor="unannotated" className="wound-list-filter-checkbox-label">
+                  Show unannotated only
+                </label>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
       
@@ -171,7 +219,7 @@ const WoundListPage = () => {
           </div>
           <h3 className="wound-list-empty-title">No wound images found</h3>
           <p className="wound-list-empty-text">
-            {searchTerm 
+            {searchTerm || showAnnotatedOnly || showUnannotatedOnly
               ? "Try adjusting your search or filters to find what you're looking for."
               : "Get started by uploading new wound images."}
           </p>
@@ -187,30 +235,47 @@ const WoundListPage = () => {
                 <tr>
                   <th className="wound-list-table__th">Wound ID</th>
                   <th className="wound-list-table__th">Path</th>
+                  <th className="wound-list-table__th">Status</th>
                   <th className="wound-list-table__th wound-list-table__th--actions">Actions</th>
                 </tr>
               </thead>
               <tbody className="wound-list-table__body">
-  {filteredWounds.map((wound) => (
-    <tr
-      key={wound.id}
-      className={`wound-list-table__tr ${wound.annotated ? 'wound-list-table__tr--annotated' : ''}`}
-    >
-      <td className="wound-list-table__td">
-        <div className="wound-list-table__cell-text">{wound.id}</div>
-      </td>
-      <td className="wound-list-table__td">
-        <div className="wound-list-table__cell-text">{wound.path}</div>
-      </td>
-      <td className="wound-list-table__td wound-list-table__td--actions">
-        <Link to={`/annotate/${wound.id}`} className="wound-list-annotate-link">
-          Annotate
-        </Link>
-      </td>
-    </tr>
-  ))}
-</tbody>
-
+                {filteredWounds.map((wound) => (
+                  <tr
+                    key={wound.id}
+                    className={`wound-list-table__tr ${wound.annotated ? 'wound-list-table__tr--annotated' : ''}`}
+                  >
+                    <td className="wound-list-table__td">
+                      <div className="wound-list-table__cell-text">{wound.id}</div>
+                    </td>
+                    <td className="wound-list-table__td">
+                      <div className="wound-list-table__cell-text">{wound.path}</div>
+                    </td>
+                    <td className="wound-list-table__td">
+                      {wound.annotated ? (
+                        <span className="wound-list-status wound-list-status--annotated">
+                          <svg className="wound-list-status-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                          </svg>
+                          Annotated
+                        </span>
+                      ) : (
+                        <span className="wound-list-status wound-list-status--unannotated">
+                          <svg className="wound-list-status-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M18 12H6" />
+                          </svg>
+                          Not Annotated
+                        </span>
+                      )}
+                    </td>
+                    <td className="wound-list-table__td wound-list-table__td--actions">
+                      <Link to={`/annotate/${wound.id}`} className="wound-list-annotate-link">
+                        {wound.annotated ? 'Edit Annotations' : 'Annotate'}
+                      </Link>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
             </table>
           </div>
           <div className="wound-list-pagination">

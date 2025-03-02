@@ -184,6 +184,7 @@ def save_annotations(wound_id):
         
         # Get annotations from request
         annotations_data = request.json
+        print(f"Received annotations data: {json.dumps(annotations_data, indent=2)}")  # Debug print
         
         # Convert wound_id to integer
         wound_assessment_id = int(wound_id)
@@ -198,7 +199,17 @@ def save_annotations(wound_id):
             ann['last_modified_by'] = username
             ann['created_at'] = ann.get('created_at', now)
             ann['last_modified_at'] = now
+            
+            # Ensure doctor_notes and severity are included (even if empty)
+            if 'doctor_notes' not in ann:
+                ann['doctor_notes'] = ''
+            if 'severity' not in ann:
+                ann['severity'] = ''
+                
             annotations.append(ann)
+            
+        # Print annotations after processing
+        print(f"Processed annotations to save: {json.dumps(annotations, indent=2)}")
         
         # Save annotations to database
         success = connector.save_annotations(wound_assessment_id, annotations)
@@ -209,6 +220,9 @@ def save_annotations(wound_id):
             return jsonify({'error': 'Failed to save annotations'}), 500
             
     except Exception as e:
+        import traceback
+        print(f"Error saving annotations: {str(e)}")
+        print(traceback.format_exc())
         return jsonify({'error': str(e)}), 500
 
 # Configuration data routes
@@ -224,43 +238,68 @@ def get_body_locations():
     from config import Config
     return jsonify(Config.BODY_LOCATIONS), 200
 
-# Add this new endpoint to your existing app.py file
-@app.route('/api/annotations/count-by-category', methods=['GET'])
+# Add this endpoint to your app.py file
+
+@app.route('/api/wounds/annotation-status', methods=['GET'])
 @jwt_required()
-def count_annotations_by_category():
+def get_wounds_annotation_status():
     try:
-        if not connector.connection:
-            connector.connect()
-            
-        cursor = connector.connection.cursor()
-        query = """
-        SELECT category, COUNT(*)
-        FROM wcr_wound_detection.wcr_wound.wound_annotations
-        GROUP BY category
-      
-        """
+        # Get all wound paths
+        wound_paths = connector.get_all_wound_paths()
         
-        cursor.execute(query)
-        results = cursor.fetchall()
-        cursor.close()
+        # Format initial response
+        wounds = [{'id': path.split('/')[-1], 'path': path, 'annotated': False} for path in wound_paths]
         
-        # Format the results as a list of objects
-        category_counts = [
-            {"category": row[0] or "Uncategorized", "count": row[1]} 
-            for row in results
-        ]
+        # Check each wound for annotations
+        for wound in wounds:
+            try:
+                wound_id = int(wound['id'])
+                annotations = connector.get_annotations(wound_id)
+                wound['annotated'] = bool(annotations and annotations.get('boxes') and len(annotations['boxes']) > 0)
+            except Exception as e:
+                print(f"Error checking annotations for wound {wound['id']}: {str(e)}")
+                # Continue with the next wound rather than failing the whole request
+                continue
         
-        return jsonify(category_counts), 200
-        
+        return jsonify(wounds), 200
     except Exception as e:
-        print(f"Error counting annotations: {str(e)}")
-        return jsonify({"error": "Failed to retrieve annotation counts"}), 500
+        print(f"Error getting wound annotation status: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
     
 @app.route('/api/config/category-colors', methods=['GET'])
 @jwt_required()
 def get_category_colors():
     from config import Config
     return jsonify(Config.CATEGORY_COLORS), 200
+
+@app.route('/api/wounds/with-status', methods=['GET'])
+@jwt_required()
+def get_wounds_with_status():
+    try:
+        # Get all wound paths
+        wound_paths = connector.get_all_wound_paths_with_status()
+        
+        # Format response - the status field is now included from the database query
+        wounds = [{'id': path[0], 'path': path[1], 'annotated': bool(path[2])} for path in wound_paths]
+        
+        return jsonify(wounds), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+@app.route('/api/annotations/count-by-category', methods=['GET'])
+@jwt_required()
+def get_annotation_counts_by_category():
+    try:
+        # Assume connector.get_annotation_counts_by_category() returns data like:
+        # [{"category": "Category1", "count": 5}, {"category": "Category2", "count": 3}]
+        counts = connector.get_annotation_counts_by_category()
+        if counts is None:
+            counts = []
+        return jsonify(counts), 200
+    except Exception as e:
+        print(f"Error getting annotation counts: {str(e)}")
+        return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
     app.run(debug=True, port=3000)

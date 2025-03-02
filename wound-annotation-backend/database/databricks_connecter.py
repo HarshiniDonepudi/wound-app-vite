@@ -104,6 +104,9 @@ class DatabricksConnector:
     def create_annotations_table(self):
         """Create annotations table if it doesn't exist"""
         try:
+            if not self.connection:
+                self.connect()
+                
             query = """
             CREATE TABLE IF NOT EXISTS wcr_wound_detection.wcr_wound.wound_annotations (
                 annotation_id STRING,
@@ -119,6 +122,8 @@ class DatabricksConnector:
                 created_at TIMESTAMP,
                 last_modified_by STRING,
                 last_modified_at TIMESTAMP,
+                doctor_notes STRING,
+                severity STRING,
                 PRIMARY KEY (annotation_id)
             )
             """
@@ -126,15 +131,77 @@ class DatabricksConnector:
             cursor.execute(query)
             self.connection.commit()
             cursor.close()
+            print("Annotations table created or verified successfully")
         except Exception as e:
             print(f"Error creating annotations table: {str(e)}")
             raise
-
-    
+            
+    def check_column_exists(self, table_name, column_name):
+        """Check if a column exists in a table"""
+        try:
+            if not self.connection:
+                self.connect()
+                
+            # This is a Databricks-specific way to check for column existence
+            query = f"""
+            SELECT * FROM wcr_wound_detection.wcr_wound.{table_name} 
+            WHERE 1=0
+            """
+            
+            cursor = self.connection.cursor()
+            cursor.execute(query)
+            
+            # Get column names from cursor description
+            column_names = [desc[0].lower() for desc in cursor.description]
+            cursor.close()
+            
+            return column_name.lower() in column_names
+            
+        except Exception as e:
+            print(f"Error checking if column exists: {str(e)}")
+            return False
+            
+    def add_missing_columns(self):
+        """Add doctor_notes and severity columns if they don't exist"""
+        try:
+            if not self.connection:
+                self.connect()
+                
+            # Check if doctor_notes column exists
+            if not self.check_column_exists('wound_annotations', 'doctor_notes'):
+                print("Adding doctor_notes column...")
+                query = """
+                ALTER TABLE wcr_wound_detection.wcr_wound.wound_annotations 
+                ADD COLUMN doctor_notes STRING
+                """
+                cursor = self.connection.cursor()
+                cursor.execute(query)
+                self.connection.commit()
+                cursor.close()
+                print("Added doctor_notes column")
+            
+            # Check if severity column exists
+            if not self.check_column_exists('wound_annotations', 'severity'):
+                print("Adding severity column...")
+                query = """
+                ALTER TABLE wcr_wound_detection.wcr_wound.wound_annotations 
+                ADD COLUMN severity STRING
+                """
+                cursor = self.connection.cursor()
+                cursor.execute(query)
+                self.connection.commit()
+                cursor.close()
+                print("Added severity column")
+                
+        except Exception as e:
+            print(f"Error adding missing columns: {str(e)}")
 
     def get_annotations(self, wound_assessment_id: int) -> Optional[Dict]:
         """Get all annotations for a wound assessment"""
         try:
+            if not self.connection:
+                self.connect()
+                
             query = f"""
             SELECT *
             FROM wcr_wound_detection.wcr_wound.wound_annotations
@@ -145,27 +212,44 @@ class DatabricksConnector:
             cursor = self.connection.cursor()
             cursor.execute(query)
             results = cursor.fetchall()
+            
+            # Get column names
+            column_names = [desc[0].lower() for desc in cursor.description]
             cursor.close()
             
             if results:
                 annotations = {
-                    'boxes': [{
-                        'annotation_id': row[0],
-                        'category': row[2],
-                        'location': row[3],
-                        'body_map_id': row[4],
-                        'x': row[5],
-                        'y': row[6],
-                        'width': row[7],
-                        'height': row[8],
-                        'created_by': row[9],
-                        'created_at': row[10].isoformat() if row[10] else None,
-                        'last_modified_by': row[11],
-                        'last_modified_at': row[12].isoformat() if row[12] else None,
-                        'doctor_notes': row[13] if len(row) > 13 else None,  # Include doctor notes
-                        'severity': row[14] if len(row) > 14 else None 
-                    } for row in results]
+                    'boxes': []
                 }
+                
+                for row in results:
+                    # Create a dictionary to map column names to values
+                    row_dict = dict(zip(column_names, row))
+                    
+                    annotation = {
+                        'annotation_id': row_dict.get('annotation_id'),
+                        'category': row_dict.get('category'),
+                        'location': row_dict.get('location'),
+                        'body_map_id': row_dict.get('body_map_id'),
+                        'x': row_dict.get('x'),
+                        'y': row_dict.get('y'),
+                        'width': row_dict.get('width'),
+                        'height': row_dict.get('height'),
+                        'created_by': row_dict.get('created_by'),
+                        'created_at': row_dict.get('created_at').isoformat() if row_dict.get('created_at') else None,
+                        'last_modified_by': row_dict.get('last_modified_by'),
+                        'last_modified_at': row_dict.get('last_modified_at').isoformat() if row_dict.get('last_modified_at') else None
+                    }
+                    
+                    # Add doctor_notes and severity fields if they exist
+                    if 'doctor_notes' in row_dict:
+                        annotation['doctor_notes'] = row_dict.get('doctor_notes')
+                    
+                    if 'severity' in row_dict:
+                        annotation['severity'] = row_dict.get('severity')
+                        
+                    annotations['boxes'].append(annotation)
+                
                 return annotations
                 
             return None
@@ -173,6 +257,39 @@ class DatabricksConnector:
         except Exception as e:
             print(f"Error fetching annotations: {str(e)}")
             return None
+
+
+
+
+    def get_all_wound_paths_with_status(self) -> list:
+        """Get all unique image paths with their annotation status"""
+        try:
+            if not self.connection:
+                self.connect()
+
+            query = """
+            SELECT 
+                w.WoundAssessmentID as id, 
+                w.path,
+                CASE WHEN a.wound_assessment_id IS NOT NULL THEN 1 ELSE 0 END as has_annotations
+            FROM wcr_wound_detection.wcr_wound.wcr_annotation_initial w
+            LEFT JOIN (
+                SELECT DISTINCT wound_assessment_id 
+                FROM wcr_wound_detection.wcr_wound.wound_annotations
+            ) a ON w.WoundAssessmentID = a.wound_assessment_id
+            ORDER BY w.path
+            """
+
+            cursor = self.connection.cursor()
+            cursor.execute(query)
+            results = cursor.fetchall()
+            cursor.close()
+
+            return results
+
+        except Exception as e:
+            print(f"Error fetching image paths with status: {str(e)}")
+            return []
 
     def save_annotations(self, wound_assessment_id: int, annotations: list) -> bool:
         """Save annotations to database"""
@@ -193,11 +310,18 @@ class DatabricksConnector:
             insert_query = r"""
             INSERT INTO wcr_wound_detection.wcr_wound.wound_annotations (
                 annotation_id, wound_assessment_id, category, location, body_map_id,
-                x, y, width, height, created_by, created_at, last_modified_by, last_modified_at, doctor_notes,severity
+                x, y, width, height, created_by, created_at, last_modified_by, last_modified_at, doctor_notes, severity
             ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """
+            
+            # For debugging purposes
+            print(f"Number of annotations to save: {len(annotations)}")
+            
             for annotation in annotations:
-                # Debug print the parameters to verify their types:
+                # Print each annotation for debugging
+                print(f"Processing annotation: {annotation}")
+                
+                # Debug print the parameters to verify their types
                 params = (
                     str(uuid.uuid4()),
                     wound_assessment_id,
@@ -209,14 +333,17 @@ class DatabricksConnector:
                     annotation['width'],
                     annotation['height'],
                     annotation['created_by'],
-                    annotation['created_at'],       # Pass as ISO string or as a datetime object if supported.
+                    annotation['created_at'],
                     annotation['last_modified_by'],
                     annotation['last_modified_at'],
                     annotation.get('doctor_notes', ''),
-                    annotation.get('severity', '')# Same note as above.
+                    annotation.get('severity', '')
                 )
-                print("Executing query with parameters:", params)
+                print(f"Executing query with parameters: {params}")
                 cursor.execute(insert_query, params)
+                
+            # Update the annotation status in a separate table or field if needed
+            # This is optional if you're using the LEFT JOIN approach in get_all_wound_paths_with_status
             
             self.connection.commit()
             cursor.close()
@@ -225,8 +352,30 @@ class DatabricksConnector:
         except Exception as e:
             print(f"Error saving annotations: {str(e)}")
             return False
-
-
+            
+    def verify_saved_annotations(self, wound_assessment_id):
+        """Verify that annotations were saved correctly"""
+        try:
+            if not self.connection:
+                self.connect()
+                
+            query = f"""
+            SELECT annotation_id, category, location, doctor_notes, severity
+            FROM wcr_wound_detection.wcr_wound.wound_annotations
+            WHERE wound_assessment_id = {wound_assessment_id}
+            """
+            
+            cursor = self.connection.cursor()
+            cursor.execute(query)
+            results = cursor.fetchall()
+            cursor.close()
+            
+            print(f"Verification - saved annotations for wound_assessment_id {wound_assessment_id}:")
+            for row in results:
+                print(f"  ID: {row[0]}, Category: {row[1]}, Location: {row[2]}, Notes: {row[3]}, Severity: {row[4]}")
+                
+        except Exception as e:
+            print(f"Error verifying saved annotations: {str(e)}")
 
     def get_all_wound_paths(self) -> list:
         """Get all unique image paths"""
@@ -274,6 +423,39 @@ class DatabricksConnector:
         except Exception as e:
             print(f"Error fetching wound types: {str(e)}")
             return []
+    def get_annotation_counts_by_category(self) -> list:
+        """Get counts of annotations grouped by category"""
+        try:
+            if not self.connection:
+                self.connect()
+                
+            query = """
+            SELECT 
+                COALESCE(category, 'Uncategorized') AS category,
+                COUNT(*) AS count
+            FROM wcr_wound_detection.wcr_wound.wound_annotations
+            GROUP BY COALESCE(category, 'Uncategorized')
+            """
+            
+            cursor = self.connection.cursor()
+            cursor.execute(query)
+            results = cursor.fetchall()
+            
+            # Get column names from cursor description for proper mapping
+            column_names = [desc[0].lower() for desc in cursor.description]
+            cursor.close()
+            
+            counts = []
+            for row in results:
+                row_dict = dict(zip(column_names, row))
+                counts.append(row_dict)
+                
+            return counts
+            
+        except Exception as e:
+            print(f"Error getting annotation counts by category: {str(e)}")
+            return []
+
 
     def get_body_locations(self) -> list:
         """Get all unique body locations"""
@@ -304,4 +486,3 @@ class DatabricksConnector:
         if self.connection:
             self.connection.close()
             self.connection = None
-    

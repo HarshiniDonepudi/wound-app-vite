@@ -32,25 +32,24 @@ export const AnnotationProvider = ({ children }) => {
   const [currentLocation, setCurrentLocation] = useState('');
   const [bodyMapId, setBodyMapId] = useState('');
   
+  // Doctor Notes and Severity fields
+  const [doctorNotes, setDoctorNotes] = useState('');
+  const [severity, setSeverity] = useState('');
+  
   // Loading and error states
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const [doctorNotes, setDoctorNotes] = useState('');
-  const [severity, setSeverity] = useState('');
-
-
-
-// Ensure these properties are initialized from existing annotations
-useEffect(() => {
-  if (selectedAnnotation) {
-    setDoctorNotes(selectedAnnotation.doctor_notes || '');
-    setSeverity(selectedAnnotation.severity || '');
-  } else {
-    setDoctorNotes('');
-    setSeverity('');
-  }
-}, [selectedAnnotation]);
+  // Ensure these properties are initialized from existing annotations
+  useEffect(() => {
+    if (selectedAnnotation) {
+      setDoctorNotes(selectedAnnotation.doctor_notes || '');
+      setSeverity(selectedAnnotation.severity || '');
+    } else {
+      setDoctorNotes('');
+      setSeverity('');
+    }
+  }, [selectedAnnotation]);
 
   // Load wound data, image, and config options
   useEffect(() => {
@@ -83,10 +82,13 @@ useEffect(() => {
         
         // Load annotations
         const annotationsData = await getAnnotations(woundId);
-        setAnnotations(annotationsData.boxes.map(box => ({
+        const processedAnnotations = annotationsData.boxes.map(box => ({
           ...box,
-          id: uuidv4() // Add unique ID for each annotation
-        })));
+          id: box.id || uuidv4() // Add unique ID for each annotation
+        }));
+        
+        console.log("Loaded annotations:", processedAnnotations);
+        setAnnotations(processedAnnotations);
         
       } catch (err) {
         setError(err.message || 'Failed to load data');
@@ -95,6 +97,49 @@ useEffect(() => {
         setLoading(false);
       }
     };
+
+  // Select an annotation
+  const selectAnnotation = (annotation) => {
+    setSelectedAnnotation(annotation);
+    
+    // Update current fields to match selected annotation
+    setCurrentCategory(annotation.category || '');
+    setCurrentLocation(annotation.location || '');
+    setBodyMapId(annotation.body_map_id || '');
+    setDoctorNotes(annotation.doctor_notes || '');
+    setSeverity(annotation.severity || '');
+  };
+
+  // Save annotations to the server
+  const saveAllAnnotations = async () => {
+    try {
+      setLoading(true);
+      
+      console.log("Preparing annotations for saving...");
+      
+      // Format annotations for API - convert each annotation
+      // We'll keep the ID field for client-side tracking but it won't be used by the backend
+      const formattedAnnotations = annotations.map(({ id, ...rest }) => {
+        // Ensure doctor_notes and severity are included
+        return {
+          ...rest,
+          doctor_notes: rest.doctor_notes || '',
+          severity: rest.severity || ''
+        };
+      });
+      
+      console.log("Formatted annotations for API:", formattedAnnotations);
+      
+      await saveAnnotations(woundId, formattedAnnotations);
+      return true;
+    } catch (err) {
+      setError(err.message || 'Failed to save annotations');
+      console.error('Error saving annotations:', err);
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  };
     
     if (woundId) {
       loadData();
@@ -112,26 +157,29 @@ useEffect(() => {
   const addAnnotation = (annotation) => {
     const newAnnotation = {
       ...annotation,
-      doctorNotes,
-      severity,
       id: uuidv4(),
+      doctor_notes: doctorNotes,
+      severity: severity,
+      created_by: localStorage.getItem('username') || 'unknown',
+      created_at: new Date().toISOString(),
       last_modified_by: localStorage.getItem('username') || 'unknown',
       last_modified_at: new Date().toISOString()
     };
     
+    console.log("Adding new annotation:", newAnnotation);
     setAnnotations([...annotations, newAnnotation]);
   };
 
-  
-
   // Update an existing annotation
   const updateAnnotation = (updatedAnnotation) => {
+    console.log("Updating annotation:", updatedAnnotation);
+    
     setAnnotations(annotations.map(ann => 
       ann.id === updatedAnnotation.id 
         ? { 
             ...updatedAnnotation, 
-            doctor_notes: updatedAnnotation.doctor_notes || '',
-            severity: updatedAnnotation.severity || '',
+            doctor_notes: updatedAnnotation.doctor_notes || doctorNotes || '',
+            severity: updatedAnnotation.severity || severity || '',
             last_modified_by: localStorage.getItem('username') || 'unknown',
             last_modified_at: new Date().toISOString()
           } 
@@ -140,7 +188,13 @@ useEffect(() => {
     
     // Update selected annotation if it was the one updated
     if (selectedAnnotation && selectedAnnotation.id === updatedAnnotation.id) {
-      setSelectedAnnotation(updatedAnnotation);
+      setSelectedAnnotation({
+        ...updatedAnnotation,
+        doctor_notes: updatedAnnotation.doctor_notes || doctorNotes || '',
+        severity: updatedAnnotation.severity || severity || '',
+        last_modified_by: localStorage.getItem('username') || 'unknown',
+        last_modified_at: new Date().toISOString()
+      });
     }
   };
 

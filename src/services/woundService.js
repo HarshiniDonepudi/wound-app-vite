@@ -1,7 +1,13 @@
 import { apiRequest } from './api';
 
 export const getAllWounds = async () => {
-  return apiRequest('/wounds');
+  // Use the new endpoint that includes annotation status
+  try {
+    return await apiRequest('/wounds/with-status');
+  } catch (error) {
+    console.log("Annotation status endpoint not available, falling back to basic wounds endpoint");
+    return apiRequest('/wounds');
+  }
 };
 
 export const getWoundById = async (woundId) => {
@@ -26,9 +32,14 @@ export const saveAnnotations = async (woundId, annotations) => {
 };
 
 export const getConfigOptions = async () => {
-  const etiologyOptions = await apiRequest('/config/etiology-options');
-  const bodyLocations = await apiRequest('/config/body-locations');
-  const categoryColors = await apiRequest('/config/category-colors');
-  
-  return { etiologyOptions, bodyLocations, categoryColors };
+  try {
+    const etiologyOptions = await apiRequest('/config/etiology-options');
+    const bodyLocations = await apiRequest('/config/body-locations');
+    const categoryColors = await apiRequest('/config/category-colors');
+    
+    return { etiologyOptions, bodyLocations, categoryColors };
+  } catch (error) {
+    console.error("Error fetching config options:", error);
+    throw error;
+  }
 };

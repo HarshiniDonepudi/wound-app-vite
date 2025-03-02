@@ -10,9 +10,13 @@ export default function AnnotationControls() {
     currentCategory,
     currentLocation,
     bodyMapId,
+    doctorNotes,
+    severity, 
     setCurrentCategory,
     setCurrentLocation,
     setBodyMapId,
+    setDoctorNotes,
+    setSeverity,
     updateAnnotation,
     deleteAnnotation,
     saveAnnotations,
@@ -21,20 +25,8 @@ export default function AnnotationControls() {
 
   const [saveStatus, setSaveStatus] = useState({ message: '', type: '' });
   const [showBodyMapDialog, setShowBodyMapDialog] = useState(false);
-  const [doctorNotes, setDoctorNotes] = useState('');
   const [selectedSeverity, setSelectedSeverity] = useState('');
   const [availableSeverities, setAvailableSeverities] = useState([]);
-
-  // Load doctor notes from selected annotation
-  useEffect(() => {
-    if (selectedAnnotation) {
-      setDoctorNotes(selectedAnnotation.doctor_notes || '');
-      setSelectedSeverity(selectedAnnotation.severity || '');
-    } else {
-      setDoctorNotes('');
-      setSelectedSeverity('');
-    }
-  }, [selectedAnnotation]);
 
   // Update available severities based on wound category
   useEffect(() => {
@@ -53,6 +45,11 @@ export default function AnnotationControls() {
       setSelectedSeverity('');
     }
   }, [currentCategory]);
+  
+  // Sync selected severity with severity from context
+  useEffect(() => {
+    setSelectedSeverity(severity || '');
+  }, [severity]);
 
   // Helper function to get severity options based on category
   const getSeverityOptionsForCategory = (category) => {
@@ -127,40 +124,66 @@ export default function AnnotationControls() {
   const handleCategoryChange = (e) => {
     const newCat = e.target.value;
     setCurrentCategory(newCat);
+    
     if (selectedAnnotation) {
-      updateAnnotation({ ...selectedAnnotation, category: newCat });
+      console.log("Updating category for annotation:", selectedAnnotation.id);
+      updateAnnotation({ 
+        ...selectedAnnotation, 
+        category: newCat 
+      });
     }
   };
 
   const handleLocationChange = (e) => {
     const newLoc = e.target.value;
     setCurrentLocation(newLoc);
+    
     if (selectedAnnotation) {
-      updateAnnotation({ ...selectedAnnotation, location: newLoc });
+      console.log("Updating location for annotation:", selectedAnnotation.id);
+      updateAnnotation({ 
+        ...selectedAnnotation, 
+        location: newLoc 
+      });
     }
   };
 
   const handleBodyMapIdChange = (e) => {
     const value = e.target.value;
     setBodyMapId(value);
+    
     if (selectedAnnotation) {
-      updateAnnotation({ ...selectedAnnotation, body_map_id: value });
+      console.log("Updating body map ID for annotation:", selectedAnnotation.id);
+      updateAnnotation({ 
+        ...selectedAnnotation, 
+        body_map_id: value 
+      });
     }
   };
 
   const handleSeverityChange = (e) => {
     const value = e.target.value;
     setSelectedSeverity(value);
+    setSeverity(value);
+    
     if (selectedAnnotation) {
-      updateAnnotation({ ...selectedAnnotation, severity: value });
+      console.log("Updating severity for annotation:", selectedAnnotation.id, "value:", value);
+      updateAnnotation({ 
+        ...selectedAnnotation, 
+        severity: value 
+      });
     }
   };
 
   const handleDoctorNotesChange = (e) => {
     const value = e.target.value;
     setDoctorNotes(value);
+    
     if (selectedAnnotation) {
-      updateAnnotation({ ...selectedAnnotation, doctor_notes: value });
+      console.log("Updating doctor notes for annotation:", selectedAnnotation.id, "value:", value);
+      updateAnnotation({ 
+        ...selectedAnnotation, 
+        doctor_notes: value 
+      });
     }
   };
 
@@ -174,6 +197,7 @@ export default function AnnotationControls() {
     try {
       setSaveStatus({ message: 'Saving annotations...', type: 'info' });
       const success = await saveAnnotations();
+      
       if (success) {
         setSaveStatus({ message: 'Annotations saved successfully!', type: 'success' });
         setTimeout(() => setSaveStatus({ message: '', type: '' }), 3000);
@@ -277,14 +301,14 @@ export default function AnnotationControls() {
           <label htmlFor="severitySelect">Wound Severity:</label>
           <select
             id="severitySelect"
-            value={selectedSeverity}
+            value={selectedSeverity || ''}
             onChange={handleSeverityChange}
             className="form-select"
           >
             <option value="">-- Select Severity --</option>
-            {availableSeverities.map((severity) => (
-              <option key={severity.value} value={severity.value}>
-                {severity.label}
+            {availableSeverities.map((severityOption) => (
+              <option key={severityOption.value} value={severityOption.value}>
+                {severityOption.label}
               </option>
             ))}
           </select>
@@ -334,7 +358,7 @@ export default function AnnotationControls() {
         <input
           type="text"
           id="bodyMapId"
-          value={bodyMapId}
+          value={bodyMapId || ''}
           onChange={handleBodyMapIdChange}
           placeholder="Enter body map ID"
           className="form-input"
@@ -346,7 +370,7 @@ export default function AnnotationControls() {
         <label htmlFor="doctorNotes">Doctor Notes:</label>
         <textarea
           id="doctorNotes"
-          value={doctorNotes}
+          value={doctorNotes || ''}
           onChange={handleDoctorNotesChange}
           placeholder="Enter notes about this annotation..."
           className="form-textarea"
