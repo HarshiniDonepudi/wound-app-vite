@@ -161,7 +161,9 @@ class DatabricksConnector:
                         'created_by': row[9],
                         'created_at': row[10].isoformat() if row[10] else None,
                         'last_modified_by': row[11],
-                        'last_modified_at': row[12].isoformat() if row[12] else None
+                        'last_modified_at': row[12].isoformat() if row[12] else None,
+                        'doctor_notes': row[13] if len(row) > 13 else None,  # Include doctor notes
+                        'severity': row[14] if len(row) > 14 else None 
                     } for row in results]
                 }
                 return annotations
@@ -191,8 +193,8 @@ class DatabricksConnector:
             insert_query = r"""
             INSERT INTO wcr_wound_detection.wcr_wound.wound_annotations (
                 annotation_id, wound_assessment_id, category, location, body_map_id,
-                x, y, width, height, created_by, created_at, last_modified_by, last_modified_at
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                x, y, width, height, created_by, created_at, last_modified_by, last_modified_at, doctor_notes,severity
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """
             for annotation in annotations:
                 # Debug print the parameters to verify their types:
@@ -209,7 +211,9 @@ class DatabricksConnector:
                     annotation['created_by'],
                     annotation['created_at'],       # Pass as ISO string or as a datetime object if supported.
                     annotation['last_modified_by'],
-                    annotation['last_modified_at']    # Same note as above.
+                    annotation['last_modified_at'],
+                    annotation.get('doctor_notes', ''),
+                    annotation.get('severity', '')# Same note as above.
                 )
                 print("Executing query with parameters:", params)
                 cursor.execute(insert_query, params)

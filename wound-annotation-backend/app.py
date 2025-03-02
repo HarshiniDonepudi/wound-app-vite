@@ -224,6 +224,38 @@ def get_body_locations():
     from config import Config
     return jsonify(Config.BODY_LOCATIONS), 200
 
+# Add this new endpoint to your existing app.py file
+@app.route('/api/annotations/count-by-category', methods=['GET'])
+@jwt_required()
+def count_annotations_by_category():
+    try:
+        if not connector.connection:
+            connector.connect()
+            
+        cursor = connector.connection.cursor()
+        query = """
+        SELECT category, COUNT(*)
+        FROM wcr_wound_detection.wcr_wound.wound_annotations
+        GROUP BY category
+      
+        """
+        
+        cursor.execute(query)
+        results = cursor.fetchall()
+        cursor.close()
+        
+        # Format the results as a list of objects
+        category_counts = [
+            {"category": row[0] or "Uncategorized", "count": row[1]} 
+            for row in results
+        ]
+        
+        return jsonify(category_counts), 200
+        
+    except Exception as e:
+        print(f"Error counting annotations: {str(e)}")
+        return jsonify({"error": "Failed to retrieve annotation counts"}), 500
+    
 @app.route('/api/config/category-colors', methods=['GET'])
 @jwt_required()
 def get_category_colors():

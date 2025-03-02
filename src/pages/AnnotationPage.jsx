@@ -6,11 +6,13 @@ import { useAnnotations } from '../hooks/useAnnotations';
 import AnnotationCanvas from '../components/annotations/AnnotationCanvas';
 import AnnotationControls from '../components/annotations/AnnotationControls';
 import AnnotationInfo from '../components/annotations/AnnotationInfo';
+import AnnotationCounter from '../components/annotations/AnnotationCounter';
 
 export default function AnnotationPage() {
   const { woundId } = useParams();
   const { wound, loading, error, selectedAnnotation } = useAnnotations();
   const [showInfo, setShowInfo] = useState(true);
+  const [showCounter, setShowCounter] = useState(false);
 
   // Loading State
   if (loading) {
@@ -84,6 +86,31 @@ export default function AnnotationPage() {
           )}
         </div>
         <div className="annotation-header__right">
+          {/* Stats Button */}
+          <button
+            onClick={() => setShowCounter(!showCounter)}
+            className="btn btn--outline"
+            title="Show annotation statistics"
+          >
+            <svg 
+              className="btn__icon" 
+              width="20" 
+              height="20" 
+              fill="none" 
+              stroke="currentColor" 
+              viewBox="0 0 24 24" 
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path 
+                strokeLinecap="round" 
+                strokeLinejoin="round" 
+                strokeWidth="2" 
+                d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" 
+              />
+            </svg>
+            {showCounter ? 'Hide Stats' : 'Show Stats'}
+          </button>
+          
           {selectedAnnotation && (
             <button
               onClick={() => setShowInfo(!showInfo)}
@@ -105,6 +132,11 @@ export default function AnnotationPage() {
           </Link>
         </div>
       </header>
+
+      {/* Conditional render of the counter dialog */}
+      {showCounter && (
+        <AnnotationCounter onClose={() => setShowCounter(false)} />
+      )}
 
       {/* Main Content: Canvas + Sidebar */}
       <div className="annotation-content">
@@ -144,5 +176,3 @@ export default function AnnotationPage() {
     </div>
   );
 }
-
-

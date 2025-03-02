@@ -580,12 +580,12 @@ h3 {
 .profile-dropdown__item--danger {
   color: #d93025;
 }
-/* --- Sidebar Container --- */
+
 .sidebar {
   position: fixed;
   top: 0;
   left: 0;
-  width: 0; /* closed by default */
+  width: 0; 
   height: 100%;
   background-color: #fff;
   box-shadow: 0 2px 8px rgba(0,0,0,0.1);
@@ -596,7 +596,7 @@ h3 {
   z-index: 20;
 }
 .sidebar--open {
-  width: 240px; /* or any desired open width */
+  width: 240px; 
 }
 
 .sidebar__content {
@@ -606,7 +606,6 @@ h3 {
   padding: 16px 0;
 }
 
-/* --- Profile Section --- */
 .sidebar__profile {
   display: flex;
   align-items: center;
@@ -646,7 +645,7 @@ h3 {
   text-transform: capitalize;
 }
 
-/* --- Navigation --- */
+
 .sidebar__nav {
   flex: 1;
   display: flex;
@@ -672,7 +671,7 @@ h3 {
   flex-direction: column;
 }
 
-/* --- Links --- */
+
 .sidebar-link {
   display: flex;
   align-items: center;
@@ -690,8 +689,8 @@ h3 {
   color: #111;
 }
 .sidebar-link--active {
-  background-color: #ebf2ff; /* brand-50 */
-  color: #2563eb;           /* brand-700 */
+  background-color: #ebf2ff;
+  color: #2563eb;          
 }
 .sidebar-link__icon {
   display: flex;
@@ -708,58 +707,57 @@ h3 {
   height: 20px;
 }
 
-/* --- Footer (Help & Support) --- */
+
 .sidebar__footer {
   border-top: 1px solid #e5e7eb;
   padding: 12px;
 }
-/* Overall layout container */
+
 .layout-container {
   min-height: 100vh;
-  background-color: #f9fafb; /* or your preferred background */
+  background-color: #f9fafb; 
   display: flex;
   flex-direction: column;
 }
 
-/* The header is fixed at top in Header.jsx, 
-   so we just account for its height below. */
+
 .layout-body {
   display: flex;
   flex: 1;
-  margin-top: 64px; /* match your Header's height if it's fixed */
+  margin-top: 64px; 
   height: calc(100vh - 64px);
   position: relative;
-  overflow: hidden; /* so we can overlay the sidebar on mobile */
+  overflow: hidden; 
 }
 
-/* Dark overlay for mobile when the sidebar is open */
+
 .layout-overlay {
   position: fixed;
-  inset: 0;           /* top:0; right:0; bottom:0; left:0 */
+  inset: 0;          
   z-index: 10;
   background-color: rgba(0,0,0,0.5);
   backdrop-filter: blur(4px);
   transition: opacity 0.3s ease;
 }
 
-/* Sidebar Container */
+
 .layout-sidebar-container {
-  position: fixed;     /* so it can slide in/out on mobile */
+  position: fixed;   
   left: 0;
-  top: 64px;           /* under the header if it's fixed */
+  top: 64px;          
   bottom: 0;
-  width: 0;            /* closed by default */
+  width: 0;           
   overflow: hidden;
-  z-index: 20;         /* above main content, below overlay */
+  z-index: 20;       
   transition: width 0.3s ease, transform 0.3s ease;
 }
 
-/* When open, set a width, e.g. 280px */
+
 .layout-sidebar-container--open {
   width: 280px;
 }
 
-/* For mobile specifically, we might also shift it with transform if closed */
+
 .layout-sidebar-container--mobile {
   transform: translateX(-100%);
 }
@@ -767,31 +765,29 @@ h3 {
   transform: translateX(0);
 }
 
-/* Main content area */
+
 .layout-main {
   flex: 1;
-  overflow-y: auto;  /* if you want scrolling content */
+  overflow-y: auto; 
   transition: all 0.3s ease;
-  /* on large screens, push content to the right if sidebar is open */
   margin-left: 0; 
 }
 @media (min-width: 1024px) {
   .layout-main {
-    margin-left: 280px; /* same width as the sidebar container */
+    margin-left: 280px;
   }
-  /* if the sidebar is closed, remove that margin */
   .layout-sidebar-container:not(.layout-sidebar-container--open) ~ .layout-main {
     margin-left: 0;
   }
 }
 
-/* Inner main content padding */
+
 .layout-main-inner {
   padding: 24px;
   box-sizing: border-box;
 }
 
-/* Dashboard Container */
+
 .dashboard-container {
   max-width: 1200px;
   margin: 0 auto;
@@ -799,7 +795,7 @@ h3 {
   font-family: Arial, sans-serif;
 }
 
-/* Loading State */
+
 .dashboard-loading {
   display: flex;
   justify-content: center;
@@ -813,7 +809,7 @@ h3 {
   width: 64px;
   height: 64px;
   border: 4px solid #ddd;
-  border-top: 4px solid #3498db; /* primary color */
+  border-top: 4px solid #3498db;
   border-radius: 50%;
   animation: spin 1s linear infinite;
   margin: 0 auto;
@@ -823,12 +819,12 @@ h3 {
   color: #666;
 }
 
-/* Keyframes for spinner */
+
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
 
-/* Welcome Message */
+
 .dashboard-welcome h1 {
   font-size: 1.8rem;
   color: #333;

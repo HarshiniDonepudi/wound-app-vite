@@ -36,6 +36,22 @@ export const AnnotationProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  const [doctorNotes, setDoctorNotes] = useState('');
+  const [severity, setSeverity] = useState('');
+
+
+
+// Ensure these properties are initialized from existing annotations
+useEffect(() => {
+  if (selectedAnnotation) {
+    setDoctorNotes(selectedAnnotation.doctor_notes || '');
+    setSeverity(selectedAnnotation.severity || '');
+  } else {
+    setDoctorNotes('');
+    setSeverity('');
+  }
+}, [selectedAnnotation]);
+
   // Load wound data, image, and config options
   useEffect(() => {
     const loadData = async () => {
@@ -96,6 +112,8 @@ export const AnnotationProvider = ({ children }) => {
   const addAnnotation = (annotation) => {
     const newAnnotation = {
       ...annotation,
+      doctorNotes,
+      severity,
       id: uuidv4(),
       last_modified_by: localStorage.getItem('username') || 'unknown',
       last_modified_at: new Date().toISOString()
@@ -104,19 +122,23 @@ export const AnnotationProvider = ({ children }) => {
     setAnnotations([...annotations, newAnnotation]);
   };
 
+  
+
   // Update an existing annotation
   const updateAnnotation = (updatedAnnotation) => {
     setAnnotations(annotations.map(ann => 
       ann.id === updatedAnnotation.id 
         ? { 
             ...updatedAnnotation, 
+            doctor_notes: updatedAnnotation.doctor_notes || '',
+            severity: updatedAnnotation.severity || '',
             last_modified_by: localStorage.getItem('username') || 'unknown',
             last_modified_at: new Date().toISOString()
           } 
         : ann
     ));
     
-    // Update selected annotation if it was the one that was updated
+    // Update selected annotation if it was the one updated
     if (selectedAnnotation && selectedAnnotation.id === updatedAnnotation.id) {
       setSelectedAnnotation(updatedAnnotation);
     }
@@ -172,11 +194,15 @@ export const AnnotationProvider = ({ children }) => {
     currentCategory,
     currentLocation,
     bodyMapId,
+    doctorNotes,
+    severity,
     loading,
     error,
     setCurrentCategory,
     setCurrentLocation,
     setBodyMapId,
+    setDoctorNotes,
+    setSeverity,
     addAnnotation,
     updateAnnotation,
     deleteAnnotation,
