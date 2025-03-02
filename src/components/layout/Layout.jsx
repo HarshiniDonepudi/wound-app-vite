@@ -1,5 +1,4 @@
-// src/components/layout/Layout.jsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Header from './Header';
 import Sidebar from './Sidebar';
 import { useAuth } from '../../hooks/useAuth';
@@ -7,52 +6,62 @@ import { useAuth } from '../../hooks/useAuth';
 const Layout = ({ children }) => {
   const { currentUser } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Detect screen width changes
+  useEffect(() => {
+    const checkMobile = () => {
+      const mobileView = window.innerWidth < 1024;
+      setIsMobile(mobileView);
+      // Auto-close sidebar for mobile
+      setSidebarOpen(!mobileView);
+    };
+
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
   };
 
-  // If no user is logged in, don't show the layout
+  const closeSidebar = () => {
+    if (isMobile) {
+      setSidebarOpen(false);
+    }
+  };
+
+  // If no user logged in, just render children directly (no layout)
   if (!currentUser) {
     return <>{children}</>;
   }
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="layout-container">
       <Header toggleSidebar={toggleSidebar} />
-      
-      <div className="flex h-screen pt-16 overflow-hidden bg-gray-100">
-        {/* Sidebar */}
-        <div className={`fixed inset-0 flex z-40 lg:inset-y-auto lg:static lg:h-auto ${sidebarOpen ? '' : 'lg:-ml-64'} transition-all duration-300`}>
-          <div className={`fixed inset-0 bg-gray-600 bg-opacity-75 transition-opacity lg:hidden ${sidebarOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`} 
-            onClick={() => setSidebarOpen(false)}
-            aria-hidden="true">
-          </div>
-          
-          <div className={`relative flex-1 flex flex-col max-w-xs w-full bg-white transition-all duration-300 transform ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
-            <div className="absolute top-0 right-0 -mr-12 pt-2 lg:hidden">
-              <button
-                className={`ml-1 flex items-center justify-center h-10 w-10 rounded-full focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white ${sidebarOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
-                onClick={() => setSidebarOpen(false)}
-              >
-                <span className="sr-only">Close sidebar</span>
-                <svg className="h-6 w-6 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-            
-            <Sidebar />
-          </div>
-          
-          <div className="flex-shrink-0 w-14" aria-hidden="true">
-            {/* Dummy element to force sidebar to shrink to fit close icon */}
-          </div>
+
+      <div className="layout-body">
+        {/* Dark overlay for mobile */}
+        {isMobile && sidebarOpen && (
+          <div
+            className="layout-overlay"
+            onClick={closeSidebar}
+          />
+        )}
+
+        {/* Sidebar container */}
+        <div
+          className={`layout-sidebar-container ${
+            sidebarOpen ? 'layout-sidebar-container--open' : ''
+          } ${isMobile ? 'layout-sidebar-container--mobile' : ''}`}
+        >
+          <Sidebar isOpen={sidebarOpen} onClose={closeSidebar} />
         </div>
-        
+
         {/* Main content */}
-        <div className="flex flex-col w-0 flex-1 overflow-hidden">
-          <main className="flex-1 relative overflow-y-auto focus:outline-none">
+        <div className="layout-main">
+          <main className="layout-main-inner">
             {children}
           </main>
         </div>

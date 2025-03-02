@@ -1,58 +1,93 @@
-// src/pages/LoginPage.jsx
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
-import LoginForm from '../components/auth/LoginForm';
 
 const LoginPage = () => {
   const { login, error } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
 
-  const handleLogin = async (credentials) => {
+  const [credentials, setCredentials] = useState({
+    username: '',
+    password: ''
+  });
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setCredentials(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleLogin = async (e) => {
+    e.preventDefault();
     try {
       setIsSubmitting(true);
       await login(credentials.username, credentials.password);
       navigate('/');
     } catch (err) {
       console.error('Login error:', err);
-      // Error is handled by AuthContext
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
-      <div className="sm:mx-auto sm:w-full sm:max-w-md">
-        <h2 className="text-center text-3xl font-extrabold text-gray-900">
-          Wound Annotation Tool
-        </h2>
-        <p className="mt-2 text-center text-sm text-gray-600">
-          Sign in to your account
-        </p>
-      </div>
+    <div className="auth-page">
+      <div className="auth-container animate-fade">
+        <h1 className="auth-title">Wound Annotation Tool</h1>
+        <p className="auth-subtitle">Sign in to your account</p>
 
-      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
-          {error && (
-            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
-              <span className="block sm:inline">{error}</span>
-            </div>
-          )}
-          
-          <LoginForm onSubmit={handleLogin} isSubmitting={isSubmitting} />
-          
-          <div className="mt-6">
-            <div className="text-center">
-              <p className="text-sm text-gray-600">
-                Don't have an account?{' '}
-                <Link to="/register" className="font-medium text-blue-600 hover:text-blue-500">
-                  Register here
-                </Link>
-              </p>
-            </div>
+        {error && (
+          <div className="error-message">
+            {error}
           </div>
+        )}
+
+        <form onSubmit={handleLogin}>
+          <div className="form-group">
+            <label htmlFor="username" className="form-label">Username</label>
+            <input
+              type="text"
+              id="username"
+              name="username"
+              className="form-input"
+              value={credentials.username}
+              onChange={handleChange}
+              required
+            />
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="password" className="form-label">Password</label>
+            <input
+              type="password"
+              id="password"
+              name="password"
+              className="form-input"
+              value={credentials.password}
+              onChange={handleChange}
+              required
+            />
+          </div>
+
+          <button 
+            type="submit" 
+            className="btn btn-primary w-full"
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? 'Signing In...' : 'Sign In'}
+          </button>
+        </form>
+
+        <div className="text-center mt-4">
+          <p className="text-sm text-muted">
+            Don't have an account?{' '}
+            <Link to="/register" className="text-primary">
+              Register here
+            </Link>
+          </p>
         </div>
       </div>
     </div>

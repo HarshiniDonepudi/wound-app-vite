@@ -1,109 +1,105 @@
-// src/components/annotations/AnnotationInfo.jsx
 import React from 'react';
 import { useAnnotations } from '../../hooks/useAnnotations';
 
-const AnnotationInfo = () => {
+
+export default function AnnotationInfo() {
   const { selectedAnnotation, categoryColors } = useAnnotations();
 
-  // Format date helper function
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A';
-    
     try {
       const date = new Date(dateString);
-      return date.toLocaleString('en-US', {
+      return new Intl.DateTimeFormat('en-US', {
         year: 'numeric',
         month: 'short',
-        day: 'numeric',
+        day: '2-digit',
         hour: '2-digit',
         minute: '2-digit'
-      });
-    } catch (e) {
+      }).format(date);
+    } catch {
       return dateString;
     }
   };
 
   if (!selectedAnnotation) {
     return (
-      <div className="bg-white rounded-lg shadow p-6 mb-4">
-        <h2 className="text-xl font-semibold text-gray-800 mb-4">Annotation Details</h2>
-        <p className="text-gray-500 italic">No annotation selected. Click on an annotation to view details.</p>
+      <div className="info-card">
+        <div className="info-card__header">
+          <h2>Annotation Details</h2>
+        </div>
+        <div className="info-card__body no-selection">
+          <p>No annotation selected. Click on an annotation to view details.</p>
+        </div>
       </div>
     );
   }
 
-  // Get color for the selected annotation category
-  const color = categoryColors[selectedAnnotation.category] || '#3B82F6';
+  const color = categoryColors[selectedAnnotation.category] || '#0ea5e9';
+  const colorStyle = { 
+    backgroundColor: `${color}15`, 
+    color: color,
+    border: `1px solid ${color}30`
+  };
 
   return (
-    <div className="bg-white rounded-lg shadow p-6 mb-4">
-      <h2 className="text-xl font-semibold text-gray-800 mb-4">Annotation Details</h2>
-      
-      <div className="space-y-4">
-        <div>
-          <h3 className="text-sm font-medium text-gray-500">Category</h3>
-          <div 
-            className="mt-1 px-3 py-1 inline-block rounded-full text-sm font-medium"
-            style={{ backgroundColor: `${color}20`, color: color }}
-          >
-            {selectedAnnotation.category}
-          </div>
+    <div className="info-card">
+      <div className="info-card__header">
+        <h2>Annotation Details</h2>
+      </div>
+      <div className="info-card__body">
+        <div className="anno-category-badge" style={colorStyle}>
+          {selectedAnnotation.category}
         </div>
-        
-        <div>
-          <h3 className="text-sm font-medium text-gray-500">Body Location</h3>
-          <p className="mt-1 text-sm text-gray-900">{selectedAnnotation.location}</p>
-        </div>
-        
-        {selectedAnnotation.body_map_id && (
-          <div>
-            <h3 className="text-sm font-medium text-gray-500">Body Map ID</h3>
-            <p className="mt-1 text-sm text-gray-900">{selectedAnnotation.body_map_id}</p>
+
+        <div className="details-grid">
+          <div className="details-cell">
+            <div className="cell-label">Body Location</div>
+            <div className="cell-value">{selectedAnnotation.location || 'N/A'}</div>
           </div>
-        )}
-        
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <h3 className="text-sm font-medium text-gray-500">Position (x, y)</h3>
-            <p className="mt-1 text-sm text-gray-900">
+
+          {selectedAnnotation.body_map_id && (
+            <div className="details-cell">
+              <div className="cell-label">Body Map ID</div>
+              <div className="cell-value">{selectedAnnotation.body_map_id}</div>
+            </div>
+          )}
+
+          <div className="details-cell">
+            <div className="cell-label">Position (x, y)</div>
+            <div className="cell-value">
               ({Math.round(selectedAnnotation.x)}, {Math.round(selectedAnnotation.y)})
-            </p>
+            </div>
           </div>
-          
-          <div>
-            <h3 className="text-sm font-medium text-gray-500">Size (w × h)</h3>
-            <p className="mt-1 text-sm text-gray-900">
+
+          <div className="details-cell">
+            <div className="cell-label">Size (w × h)</div>
+            <div className="cell-value">
               {Math.round(selectedAnnotation.width)} × {Math.round(selectedAnnotation.height)}
-            </p>
+            </div>
           </div>
-        </div>
-        
-        <div>
-          <h3 className="text-sm font-medium text-gray-500">Created By</h3>
-          <p className="mt-1 text-sm text-gray-900">{selectedAnnotation.created_by}</p>
-        </div>
-        
-        <div>
-          <h3 className="text-sm font-medium text-gray-500">Created At</h3>
-          <p className="mt-1 text-sm text-gray-900">{formatDate(selectedAnnotation.created_at)}</p>
-        </div>
-        
-        {selectedAnnotation.last_modified_by && (
-          <>
-            <div>
-              <h3 className="text-sm font-medium text-gray-500">Last Modified By</h3>
-              <p className="mt-1 text-sm text-gray-900">{selectedAnnotation.last_modified_by}</p>
+
+          <div className="details-cell">
+            <div className="cell-label">Created by</div>
+            <div className="cell-value">
+              {selectedAnnotation.created_by || 'Unknown'} 
+              <span className="timestamp">{formatDate(selectedAnnotation.created_at)}</span>
             </div>
-            
-            <div>
-              <h3 className="text-sm font-medium text-gray-500">Last Modified At</h3>
-              <p className="mt-1 text-sm text-gray-900">{formatDate(selectedAnnotation.last_modified_at)}</p>
+          </div>
+
+          {selectedAnnotation.last_modified_by && (
+            <div className="details-cell">
+              <div className="cell-label">Last modified by</div>
+              <div className="cell-value">
+                {selectedAnnotation.last_modified_by}
+                <span className="timestamp">{formatDate(selectedAnnotation.last_modified_at)}</span>
+              </div>
             </div>
-          </>
-        )}
+          )}
+        </div>
+      </div>
+      <div className="info-card__footer">
+        <span className="hint">Click on the image to select another annotation</span>
       </div>
     </div>
   );
-};
-
-export default AnnotationInfo;
+}

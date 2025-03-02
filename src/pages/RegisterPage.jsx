@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import RegisterForm from '../components/auth/RegisterForm';
-import '../index.css';  // Import CSS file
+import '../index.css';  // Ensure your global CSS is imported
 
 const RegisterPage = () => {
   const { register, error } = useAuth();
@@ -31,7 +31,7 @@ const RegisterPage = () => {
 
         <RegisterForm onSubmit={handleRegister} isSubmitting={isSubmitting} />
 
-        <p>
+        <p className="register-login-text">
           Already have an account?{' '}
           <Link to="/login" className="register-login-link">
             Sign in here
