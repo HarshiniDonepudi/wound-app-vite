@@ -287,19 +287,63 @@ def get_wounds_with_status():
         return jsonify(wounds), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+    
 @app.route('/api/annotations/count-by-category', methods=['GET'])
 @jwt_required()
 def get_annotation_counts_by_category():
     try:
-        # Assume connector.get_annotation_counts_by_category() returns data like:
-        # [{"category": "Category1", "count": 5}, {"category": "Category2", "count": 3}]
-        counts = connector.get_annotation_counts_by_category()
-        if counts is None:
-            counts = []
-        return jsonify(counts), 200
+        print("Starting get_annotation_counts_by_category endpoint")
+        
+        if not connector.connection:
+            print("No connection, connecting to database")
+            connector.connect()
+            
+        cursor = connector.connection.cursor()
+        
+        # Check if any annotations exist
+        check_query = "SELECT COUNT(*) FROM wcr_wound_detection.wcr_wound.wound_annotations"
+        cursor.execute(check_query)
+        total_count = cursor.fetchone()[0]
+        print(f"Total annotations in database: {total_count}")
+        
+        if total_count == 0:
+            print("No annotations found in database")
+            cursor.close()
+            return jsonify([]), 200
+        
+        # Query for annotation counts by category
+        query = """
+        SELECT category, COUNT(*) as count
+        FROM wcr_wound_detection.wcr_wound.wound_annotations
+        GROUP BY category
+        """
+        print(f"Executing query: {query}")
+        cursor.execute(query)
+        results = cursor.fetchall()
+        print(f"Raw query results (rows):")
+        for i, row in enumerate(results):
+            print(f"Row {i}: {row}")
+        
+        # Format the results as objects for the frontend
+        formatted_results = []
+        for row in results:
+            category = row[0] if row[0] else "Uncategorized"
+            count = row[1]
+            formatted_results.append({"category": category, "count": count})
+        
+        print(f"Formatted results: {formatted_results}")
+        cursor.close()
+        
+        return jsonify(formatted_results), 200
+        
     except Exception as e:
         print(f"Error getting annotation counts: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return jsonify({'error': str(e)}), 500
+
+
+
 
 if __name__ == '__main__':
     app.run(debug=True, port=3000)

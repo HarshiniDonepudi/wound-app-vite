@@ -423,37 +423,54 @@ class DatabricksConnector:
         except Exception as e:
             print(f"Error fetching wound types: {str(e)}")
             return []
+        
     def get_annotation_counts_by_category(self) -> list:
         """Get counts of annotations grouped by category"""
         try:
+            print("Starting get_annotation_counts_by_category database query")
+            
             if not self.connection:
+                print("No connection, connecting to database")
                 self.connect()
+            
+            # First, check if there are any annotations at all
+            check_query = """
+            SELECT COUNT(*) FROM wcr_wound_detection.wcr_wound.wound_annotations
+            """
+            cursor = self.connection.cursor()
+            cursor.execute(check_query)
+            total_count = cursor.fetchone()[0]
+            print(f"Total annotations in database: {total_count}")
+            
+            if total_count == 0:
+                print("No annotations found in database")
+                cursor.close()
+                return []
                 
+            # Simplified query matching your working Python implementation
             query = """
-            SELECT 
-                COALESCE(category, 'Uncategorized') AS category,
-                COUNT(*) AS count
+            SELECT category, COUNT(*) as count
             FROM wcr_wound_detection.wcr_wound.wound_annotations
-            GROUP BY COALESCE(category, 'Uncategorized')
+            GROUP BY category
             """
             
-            cursor = self.connection.cursor()
+            print(f"Executing query: {query}")
             cursor.execute(query)
             results = cursor.fetchall()
+            print(f"Query returned {len(results)} rows")
             
-            # Get column names from cursor description for proper mapping
-            column_names = [desc[0].lower() for desc in cursor.description]
+            # Debug the raw results
+            for i, row in enumerate(results):
+                print(f"Row {i}: {row}")
+            
+            # Just return the raw results, let the endpoint format them
             cursor.close()
-            
-            counts = []
-            for row in results:
-                row_dict = dict(zip(column_names, row))
-                counts.append(row_dict)
-                
-            return counts
+            return results
             
         except Exception as e:
             print(f"Error getting annotation counts by category: {str(e)}")
+            import traceback
+            traceback.print_exc()  # Print full stack trace
             return []
 
 
