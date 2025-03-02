@@ -1,4 +1,4 @@
-const API_URL = 'http://localhost:5000/api';
+const API_URL = 'http://localhost:3000/api';
 
 // Helper function for making API requests
 export const apiRequest = async (endpoint, options = {}) => {
