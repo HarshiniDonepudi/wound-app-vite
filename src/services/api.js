@@ -1,8 +1,12 @@
-const API_URL = process.env.VITE_API_URL || 'https://wound-app-vite-1.onrender.com/';
-
+// In src/services/api.js
+// Make sure the URL ends with a proper path (no trailing slash)
+const API_URL = 'https://wound-app-vite-1.onrender.com/api';
 
 // Helper function for making API requests
 export const apiRequest = async (endpoint, options = {}) => {
+  // Make sure endpoint starts with a slash
+  const fixedEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+  
   // Get auth token from local storage
   const token = localStorage.getItem('token');
   
@@ -23,9 +27,9 @@ export const apiRequest = async (endpoint, options = {}) => {
     headers,
   };
   
-  // Make the request
+  // Make the request - ensure we're using the properly formatted URL
   try {
-    const response = await fetch(`${API_URL}${endpoint}`, requestOptions);
+    const response = await fetch(`${API_URL}${fixedEndpoint}`, requestOptions);
     
     // Handle non-2xx responses
     if (!response.ok) {
