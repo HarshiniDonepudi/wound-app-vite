@@ -1,4 +1,5 @@
-const API_URL = 'http://localhost:3000/api';
+const API_URL = process.env.VITE_API_URL || 'https://your-backend-url.com/api';
+
 
 // Helper function for making API requests
 export const apiRequest = async (endpoint, options = {}) => {
