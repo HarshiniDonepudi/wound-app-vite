@@ -13,20 +13,10 @@ from database.connection_manager import DatabaseConnectionManager
 from database.user_manager import UserManager
 
 app = Flask(__name__)
-
-FRONTEND_URL = "wound-app-vite-q609jegpx-harshinidonepudis-projects.vercel.app"
-
-
-CORS(app, 
-     resources={r"/api/*": {
-        "origins": [FRONTEND_URL, "http://localhost:5173"],
-        "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-        "allow_headers": ["Content-Type", "Authorization", "X-Requested-With"]
-     }},
-     supports_credentials=True)
+CORS(app)  # Enable CORS for all routes
 
 # Configure JWT
-app.config['JWT_SECRET_KEY'] = '29b9f018215f7e6c993acc91da9ea526'  # Change this in production!
+app.config['JWT_SECRET_KEY'] = 'your-secret-key'  # Change this in production!
 app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(hours=24)
 jwt = JWTManager(app)
 
@@ -47,62 +37,36 @@ def send_image_response(image_data):
 # Authentication routes
 @app.route('/api/auth/login', methods=['POST'])
 def login():
-    print("Login endpoint called")
-    print(f"Request method: {request.method}")
-    print(f"Request headers: {dict(request.headers)}")
+    data = request.json
+    username = data.get('username')
+    password = data.get('password')
     
-    try:
-        # Log the raw request body
-        raw_body = request.get_data().decode('utf-8')
-        print(f"Raw request body: {raw_body}")
+    if not username or not password:
+        return jsonify({'error': 'Username and password are required'}), 400
+    
+    # Use the existing user manager to authenticate
+    user_profile = user_manager.authenticate_user(username, password)
+    
+    if user_profile:
+        # Create access token
+        access_token = create_access_token(identity={
+            'user_id': user_profile.user_id,
+            'username': user_profile.username,
+            'full_name': user_profile.full_name,
+            'role': user_profile.role
+        })
         
-        # Parse JSON
-        data = request.json
-        print(f"Parsed request data: {data}")
-        
-        username = data.get('username')
-        password = data.get('password')
-        
-        if not username or not password:
-            error_msg = "Username and password are required"
-            print(f"Error: {error_msg}")
-            return jsonify({'error': error_msg}), 400
-        
-        # Use the existing user manager to authenticate
-        print(f"Attempting to authenticate user: {username}")
-        user_profile = user_manager.authenticate_user(username, password)
-        
-        if user_profile:
-            print(f"User authenticated successfully: {username}")
-            # Create access token
-            access_token = create_access_token(identity={
+        return jsonify({
+            'access_token': access_token,
+            'user': {
                 'user_id': user_profile.user_id,
                 'username': user_profile.username,
                 'full_name': user_profile.full_name,
                 'role': user_profile.role
-            })
-            
-            response_data = {
-                'access_token': access_token,
-                'user': {
-                    'user_id': user_profile.user_id,
-                    'username': user_profile.username,
-                    'full_name': user_profile.full_name,
-                    'role': user_profile.role
-                }
             }
-            print(f"Sending successful response: {response_data}")
-            return jsonify(response_data), 200
-        else:
-            error_msg = "Invalid username or password"
-            print(f"Error: {error_msg}")
-            return jsonify({'error': error_msg}), 401
-    except Exception as e:
-        error_msg = f"Login error: {str(e)}"
-        print(f"Exception: {error_msg}")
-        import traceback
-        traceback.print_exc()
-        return jsonify({'error': error_msg}), 500
+        }), 200
+    else:
+        return jsonify({'error': 'Invalid username or password'}), 401
 
 @app.route('/api/auth/register', methods=['POST'])
 def register():

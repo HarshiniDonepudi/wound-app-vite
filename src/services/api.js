@@ -1,11 +1,7 @@
-// In src/services/api.js
-export const API_URL = 'https://wound-app-vite-1.onrender.com/api';
+const API_URL = 'http://localhost:3000/api';
 
 // Helper function for making API requests
 export const apiRequest = async (endpoint, options = {}) => {
-  // Make sure endpoint starts with a slash
-  const fixedEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
-  
   // Get auth token from local storage
   const token = localStorage.getItem('token');
   
@@ -26,9 +22,9 @@ export const apiRequest = async (endpoint, options = {}) => {
     headers,
   };
   
-  // Make the request - ensure we're using the properly formatted URL
+  // Make the request
   try {
-    const response = await fetch(`${API_URL}${fixedEndpoint}`, requestOptions);
+    const response = await fetch(`${API_URL}${endpoint}`, requestOptions);
     
     // Handle non-2xx responses
     if (!response.ok) {
