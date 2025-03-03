@@ -13,14 +13,20 @@ from database.connection_manager import DatabaseConnectionManager
 from database.user_manager import UserManager
 
 app = Flask(__name__)
-CORS(app, resources={r"/api/*": {"origins": [
-    "https://wound-annotation-app.vercel.app",  # Your Vercel frontend URL
-    "http://localhost:5173",                    # Local development URL
-    "http://localhost:3000"                     # Alternative local URL
-]}})
+
+FRONTEND_URL = "https://woundexpert-pg3ht6400-harshinidonepudis-projects.vercel.app"
+
+
+CORS(app, 
+     resources={r"/api/*": {
+        "origins": [FRONTEND_URL, "http://localhost:5173"],
+        "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        "allow_headers": ["Content-Type", "Authorization", "X-Requested-With"]
+     }},
+     supports_credentials=True)
 
 # Configure JWT
-app.config['JWT_SECRET_KEY'] = 'your-secret-key'  # Change this in production!
+app.config['JWT_SECRET_KEY'] = '29b9f018215f7e6c993acc91da9ea526'  # Change this in production!
 app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(hours=24)
 jwt = JWTManager(app)
 
