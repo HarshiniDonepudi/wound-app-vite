@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: wound-annotation-backend
+    env: python
+    buildCommand: |
+      python -m venv venv
+      . venv/bin/activate
+      pip install -r requirements.txt
+    startCommand: gunicorn --chdir wound-annotation-backend wsgi:app
+    envVars:
+      - key: PYTHONPATH
+        value: .
+      - key: DATABRICKS_HOST
+        sync: false
+      - key: DATABRICKS_TOKEN
+        sync: false
+      - key: DATABRICKS_HTTP_PATH
+        sync: false
+      - key: JWT_SECRET_KEY
+        generateValue: true
