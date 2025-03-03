@@ -14,7 +14,7 @@ from database.user_manager import UserManager
 
 app = Flask(__name__)
 
-FRONTEND_URL = "https://woundexpert-pg3ht6400-harshinidonepudis-projects.vercel.app"
+FRONTEND_URL = "wound-app-vite-q609jegpx-harshinidonepudis-projects.vercel.app"
 
 
 CORS(app, 
