@@ -12,8 +12,18 @@ import json
 from database.connection_manager import DatabaseConnectionManager
 from database.user_manager import UserManager
 
+
 app = Flask(__name__)
-CORS(app)  # Enable CORS for all routes
+
+CORS(app, resources={
+    r"/api/*": {
+        "origins": [
+            "https://wound-app-vite.vercel.app",
+            "http://localhost:3000",  # For local development
+            "https://wound-app-vite.onrender.com"
+        ]
+    }
+})
 
 # Configure JWT
 app.config['JWT_SECRET_KEY'] = 'your-secret-key'  # Change this in production!
