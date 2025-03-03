@@ -1,6 +1,5 @@
 // In src/services/api.js
-// Make sure the URL ends with a proper path (no trailing slash)
-const API_URL = 'https://wound-app-vite-1.onrender.com/api';
+export const API_URL = 'https://wound-app-vite-1.onrender.com/api';
 
 // Helper function for making API requests
 export const apiRequest = async (endpoint, options = {}) => {
