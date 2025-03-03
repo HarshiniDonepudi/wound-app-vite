@@ -1,4 +1,4 @@
-const API_URL = process.env.VITE_API_URL || 'https://your-backend-url.com/api';
+const API_URL = process.env.VITE_API_URL || 'https://wound-app-vite-1.onrender.com/api';
 
 
 // Helper function for making API requests
