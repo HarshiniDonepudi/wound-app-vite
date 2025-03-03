@@ -12,6 +12,7 @@ import json
 from database.connection_manager import DatabaseConnectionManager
 from database.user_manager import UserManager
 
+
 app = Flask(__name__)
 CORS(app)  # Enable CORS for all routes
 
