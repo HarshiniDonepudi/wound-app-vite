@@ -13,7 +13,11 @@ from database.connection_manager import DatabaseConnectionManager
 from database.user_manager import UserManager
 
 app = Flask(__name__)
-CORS(app)  # Enable CORS for all routes
+CORS(app, resources={r"/api/*": {"origins": [
+    "https://woundexpert.vercel.app/",  # Replace with your actual Vercel domain
+    "http://localhost:5173",                  # For local development
+    "http://127.0.0.1:5173",                  # Alternative local development URL
+]}})
 
 # Configure JWT
 app.config['JWT_SECRET_KEY'] = 'your-secret-key'  # Change this in production!

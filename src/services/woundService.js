@@ -1,45 +1,85 @@
-import { apiRequest } from './api';
+// src/services/woundService.js
+import apiClient from './api';
 
+// Get all wounds with annotation status
 export const getAllWounds = async () => {
-  // Use the new endpoint that includes annotation status
   try {
-    return await apiRequest('/wounds/with-status');
+    // Try the endpoint that includes annotation status
+    try {
+      const response = await apiClient.get('/wounds/with-status');
+      return response.data;
+    } catch (err) {
+      // Fall back to basic endpoint if annotation status isn't available
+      console.log("Annotation status endpoint not available, falling back to basic wounds endpoint");
+      const response = await apiClient.get('/wounds');
+      return response.data;
+    }
   } catch (error) {
-    console.log("Annotation status endpoint not available, falling back to basic wounds endpoint");
-    return apiRequest('/wounds');
+    console.error('Error fetching wounds:', error);
+    throw error;
   }
 };
 
+// Get a specific wound by ID
 export const getWoundById = async (woundId) => {
-  return apiRequest(`/wounds/${woundId}`);
+  try {
+    const response = await apiClient.get(`/wounds/${woundId}`);
+    return response.data;
+  } catch (error) {
+    console.error(`Error fetching wound ${woundId}:`, error);
+    throw error;
+  }
 };
 
+// Get wound image as blob
 export const getWoundImage = async (woundId) => {
-  return apiRequest(`/wounds/${woundId}/image`, {
-    responseType: 'blob'
-  });
+  try {
+    const response = await apiClient.get(`/wounds/${woundId}/image`, {
+      responseType: 'blob'
+    });
+    return response.data;
+  } catch (error) {
+    console.error(`Error fetching wound image ${woundId}:`, error);
+    throw error;
+  }
 };
 
+// Get annotations for a wound
 export const getAnnotations = async (woundId) => {
-  return apiRequest(`/annotations/${woundId}`);
+  try {
+    const response = await apiClient.get(`/annotations/${woundId}`);
+    return response.data;
+  } catch (error) {
+    console.error(`Error fetching annotations for wound ${woundId}:`, error);
+    throw error;
+  }
 };
 
+// Save annotations for a wound
 export const saveAnnotations = async (woundId, annotations) => {
-  return apiRequest(`/annotations/${woundId}`, {
-    method: 'POST',
-    body: JSON.stringify(annotations),
-  });
+  try {
+    const response = await apiClient.post(`/annotations/${woundId}`, annotations);
+    return response.data;
+  } catch (error) {
+    console.error(`Error saving annotations for wound ${woundId}:`, error);
+    throw error;
+  }
 };
 
+// Get configuration options
 export const getConfigOptions = async () => {
   try {
-    const etiologyOptions = await apiRequest('/config/etiology-options');
-    const bodyLocations = await apiRequest('/config/body-locations');
-    const categoryColors = await apiRequest('/config/category-colors');
+    const etiologyResponse = await apiClient.get('/config/etiology-options');
+    const locationsResponse = await apiClient.get('/config/body-locations');
+    const colorsResponse = await apiClient.get('/config/category-colors');
     
-    return { etiologyOptions, bodyLocations, categoryColors };
+    return {
+      etiologyOptions: etiologyResponse.data,
+      bodyLocations: locationsResponse.data,
+      categoryColors: colorsResponse.data
+    };
   } catch (error) {
-    console.error("Error fetching config options:", error);
+    console.error('Error fetching config options:', error);
     throw error;
   }
 };

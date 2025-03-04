@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { getAllWounds, getConfigOptions } from '../services/woundService';
+import ApiConnectionTest from '../components/ApiConnectionTest';
 
 const DashboardPage = () => {
   const { currentUser } = useAuth();
@@ -11,6 +12,7 @@ const DashboardPage = () => {
     recentActivity: []
   });
   const [loading, setLoading] = useState(true);
+  const [showApiTest, setShowApiTest] = useState(false);
 
   useEffect(() => {
     const loadDashboardData = async () => {
@@ -91,6 +93,25 @@ const DashboardPage = () => {
         <p className="dashboard-subtext">
           Use the Wound Annotation Tool to view and annotate wound images.
         </p>
+        
+        {/* API Test Toggle */}
+        <button 
+          onClick={() => setShowApiTest(!showApiTest)}
+          className="api-test-toggle"
+          style={{
+            padding: '8px 12px',
+            background: '#f3f4f6',
+            border: '1px solid #d1d5db',
+            borderRadius: '4px',
+            marginTop: '10px',
+            cursor: 'pointer',
+            fontSize: '0.9rem'
+          }}
+        >
+          {showApiTest ? 'Hide API Test' : 'Show API Test'}
+        </button>
+        
+        {showApiTest && <ApiConnectionTest />}
       </div>
 
       {/* Stats Cards */}
