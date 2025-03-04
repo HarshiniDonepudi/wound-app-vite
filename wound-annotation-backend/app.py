@@ -14,7 +14,7 @@ from database.user_manager import UserManager
 
 app = Flask(__name__)
 CORS(app, resources={r"/api/*": {"origins": [
-    "https://woundexpert.vercel.app/",  # Replace with your actual Vercel domain
+    "wound-app-vite.vercel.app",
     "http://localhost:5173",                  # For local development
     "http://127.0.0.1:5173",                  # Alternative local development URL
 ]}})
