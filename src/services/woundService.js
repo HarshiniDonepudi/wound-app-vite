@@ -1,15 +1,15 @@
 // src/services/woundService.js
 import apiClient from './api';
 
-// Get all wounds with annotation status
+
 export const getAllWounds = async () => {
   try {
-    // Try the endpoint that includes annotation status
+
     try {
       const response = await apiClient.get('/wounds/with-status');
       return response.data;
     } catch (err) {
-      // Fall back to basic endpoint if annotation status isn't available
+    
       console.log("Annotation status endpoint not available, falling back to basic wounds endpoint");
       const response = await apiClient.get('/wounds');
       return response.data;
@@ -20,7 +20,7 @@ export const getAllWounds = async () => {
   }
 };
 
-// Get a specific wound by ID
+
 export const getWoundById = async (woundId) => {
   try {
     const response = await apiClient.get(`/wounds/${woundId}`);
@@ -31,7 +31,7 @@ export const getWoundById = async (woundId) => {
   }
 };
 
-// Get wound image as blob
+
 export const getWoundImage = async (woundId) => {
   try {
     const response = await apiClient.get(`/wounds/${woundId}/image`, {
@@ -44,7 +44,7 @@ export const getWoundImage = async (woundId) => {
   }
 };
 
-// Get annotations for a wound
+
 export const getAnnotations = async (woundId) => {
   try {
     const response = await apiClient.get(`/annotations/${woundId}`);
@@ -55,7 +55,7 @@ export const getAnnotations = async (woundId) => {
   }
 };
 
-// Save annotations for a wound
+
 export const saveAnnotations = async (woundId, annotations) => {
   try {
     const response = await apiClient.post(`/annotations/${woundId}`, annotations);
@@ -66,7 +66,7 @@ export const saveAnnotations = async (woundId, annotations) => {
   }
 };
 
-// Get configuration options
+
 export const getConfigOptions = async () => {
   try {
     const etiologyResponse = await apiClient.get('/config/etiology-options');

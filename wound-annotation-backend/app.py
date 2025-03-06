@@ -7,29 +7,26 @@ from datetime import datetime, timedelta
 import io
 import uuid
 import json
-
-# Import the database connector
 from database.connection_manager import DatabaseConnectionManager
 from database.user_manager import UserManager
 
 app = Flask(__name__)
 CORS(app, resources={r"/api/*": {"origins": [
     "wound-app-vite.vercel.app",
-    "http://localhost:5173",                  # For local development
-    "http://127.0.0.1:5173",                  # Alternative local development URL
+    "http://localhost:5173",                
+    "http://127.0.0.1:5173",                 
 ]}})
 
-# Configure JWT
-app.config['JWT_SECRET_KEY'] = 'your-secret-key'  # Change this in production!
+
+app.config['JWT_SECRET_KEY'] = 'your-secret-key' 
 app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(hours=24)
 jwt = JWTManager(app)
 
-# Initialize database connection
+
 db_manager = DatabaseConnectionManager()
 connector = db_manager.get_connector()
 user_manager = UserManager(connector)
 
-# Helper function to convert binary image to response
 def send_image_response(image_data):
     return send_file(
         io.BytesIO(image_data),
@@ -38,7 +35,7 @@ def send_image_response(image_data):
         download_name='wound_image.jpg'
     )
 
-# Authentication routes
+
 @app.route('/api/auth/login', methods=['POST'])
 def login():
     data = request.json
@@ -83,11 +80,11 @@ def register():
     if not username or not password or not full_name:
         return jsonify({'error': 'All fields are required'}), 400
     
-    # Create user with existing user manager
+   
     user_profile = user_manager.create_user(username, password, full_name, role)
     
     if user_profile:
-        # Create access token
+
         access_token = create_access_token(identity={
             'user_id': user_profile.user_id,
             'username': user_profile.username,

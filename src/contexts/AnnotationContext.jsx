@@ -117,10 +117,9 @@ export const AnnotationProvider = ({ children }) => {
       
       console.log("Preparing annotations for saving...");
       
-      // Format annotations for API - convert each annotation
-      // We'll keep the ID field for client-side tracking but it won't be used by the backend
+     
       const formattedAnnotations = annotations.map(({ id, ...rest }) => {
-        // Ensure doctor_notes and severity are included
+      
         return {
           ...rest,
           doctor_notes: rest.doctor_notes || '',
