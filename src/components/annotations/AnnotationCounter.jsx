@@ -205,7 +205,7 @@ const AnnotationCounter = ({ onClose }) => {
       */
       
       // Get the API endpoint for annotation counts
-      const response = await axios.get('http://localhost:3000/api/annotations/count-by-category', config);
+      const response = await axios.get(`${import.meta.env.VITE_API_URL}/annotations/count-by-category`, config);
 
       
       console.log('Raw API response:', response);
