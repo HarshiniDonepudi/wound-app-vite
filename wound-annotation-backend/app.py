@@ -325,31 +325,16 @@ def get_annotation_counts_by_category():
         print(f"Executing query: {query}")
         cursor.execute(query)
         results = cursor.fetchall()
-        print(f"Raw query results (rows): {len(results)}")
+        print(f"Raw query results (rows):")
         for i, row in enumerate(results):
             print(f"Row {i}: {row}")
         
-        # Format the results as objects for the frontend with robust error handling
+        # Format the results as objects for the frontend
         formatted_results = []
-        for i, row in enumerate(results):
-            try:
-                category = row[0] if row[0] is not None else "Uncategorized"
-                count = row[1] if row[1] is not None else 0
-                
-                # Ensure count is an integer
-                try:
-                    count = int(count)
-                except (TypeError, ValueError):
-                    print(f"Warning: Could not convert count to integer for row {i}. Using 0 instead.")
-                    count = 0
-                    
-                formatted_results.append({"category": category, "count": count})
-                print(f"Successfully processed row {i}: category={category}, count={count}")
-            except Exception as row_error:
-                print(f"Error processing row {i}: {str(row_error)}")
-                import traceback
-                traceback.print_exc()
-                # Continue with next row instead of failing completely
+        for row in results:
+            category = row[0] if row[0] is not None else "Uncategorized"
+            count = row[1]
+            formatted_results.append({"category": category, "count": count})
         
         print(f"Formatted results: {formatted_results}")
         cursor.close()
