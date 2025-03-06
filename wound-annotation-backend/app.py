@@ -318,22 +318,23 @@ def get_annotation_counts_by_category():
         
         # Query for annotation counts by category
         query = """
-        SELECT category, COUNT(*) as count
+        SELECT 
+            COALESCE(category, 'Uncategorized') AS category, 
+            COUNT(*) as count
         FROM wcr_wound_detection.wcr_wound.wound_annotations
         GROUP BY category
         """
         print(f"Executing query: {query}")
         cursor.execute(query)
         results = cursor.fetchall()
-        print(f"Raw query results (rows):")
-        for i, row in enumerate(results):
-            print(f"Row {i}: {row}")
+        
+        print(f"Raw query results: {results}")  # Debugging print
         
         # Format the results as objects for the frontend
         formatted_results = []
         for row in results:
-            category = row[0] if row[0] is not None else "Uncategorized"
-            count = row[1]
+            category = row[0]
+            count = row[1] if row[1] is not None else 0  # Ensure count is never None
             formatted_results.append({"category": category, "count": count})
         
         print(f"Formatted results: {formatted_results}")
