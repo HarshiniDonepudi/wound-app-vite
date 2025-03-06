@@ -22,7 +22,7 @@ CORS(app, resources={r"/api/*": {"origins": "https://wound-app-vite.vercel.app"}
 
 
 
-app.config['JWT_SECRET_KEY'] = 'your-secret-key' 
+app.config['JWT_SECRET_KEY'] = '29b9f018215f7e6c993acc91da9ea526' 
 app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(hours=24)
 jwt = JWTManager(app)
 
