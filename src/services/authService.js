@@ -5,15 +5,15 @@ export const loginUser = async (username, password) => {
   try {
     const response = await apiClient.post('/auth/login', { username, password });
     return response.data;
-  // } catch (error) {
-  //   console.error('Login error:', error.response?.data || error.message);
-  //   throw error;
-  // }
+  } catch (error) {
+    console.error('Login error:', error.response?.data || error.message);
+    throw error;
+  }
 
-} catch (err) {
-  console.error("Login failed:", err);
-  setError("Invalid username or password. Please try again."); // Display error message
-};
+// } catch (err) {
+//   console.error("Login failed:", err);
+//   setError("Invalid username or password. Please try again."); // Display error message
+// };
 }
 
 export const registerUser = async (userData) => {
