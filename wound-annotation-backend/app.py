@@ -11,12 +11,14 @@ from database.connection_manager import DatabaseConnectionManager
 from database.user_manager import UserManager
 
 app = Flask(__name__)
-CORS(app, resources={r"/api/*": {"origins": [
-    "wound-app-vite.vercel.app",
-    "https://wound-app-vite-1.onrender.com",
-    "http://localhost:5173",                
-    "http://127.0.0.1:5173",                 
-]}})
+# CORS(app, resources={r"/api/*": {"origins": [
+#     "wound-app-vite.vercel.app",
+#     "https://wound-app-vite-1.onrender.com",
+#     "http://localhost:5173",                
+#     "http://127.0.0.1:5173",                 
+# ]}})
+CORS(app, supports_credentials=True)
+
 
 
 app.config['JWT_SECRET_KEY'] = 'your-secret-key' 
