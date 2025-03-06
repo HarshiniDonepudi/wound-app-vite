@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import RegisterForm from '../components/auth/RegisterForm';
-import '../index.css';  // Ensure your global CSS is imported
+
 
 const RegisterPage = () => {
   const { register, error } = useAuth();

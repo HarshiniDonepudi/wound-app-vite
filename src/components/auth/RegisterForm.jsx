@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 
+
 const RegisterForm = ({ onSubmit, isSubmitting }) => {
   const [formData, setFormData] = useState({
     username: '',
@@ -58,16 +59,24 @@ const RegisterForm = ({ onSubmit, isSubmitting }) => {
           Username
         </label>
         <div className="mt-1">
-          <input
-            id="username"
-            name="username"
-            type="text"
-            autoComplete="username"
-            required
-            value={formData.username}
-            onChange={handleChange}
-            className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-          />
+        <input
+  id="username"
+  name="username"
+  type="text"
+  autoComplete="username"
+  required
+  value={formData.username}
+  onChange={handleChange}
+  style={{
+    width: "100%",
+    padding: "14px", // Bigger padding
+    fontSize: "18px", // Bigger font size
+    height: "40px", // Taller input box
+    border: "1px solid #ccc",
+    borderRadius: "8px",
+    boxShadow: "2px 2px 5px rgba(0, 0, 0, 0.1)"
+  }}
+/>
           {errors.username && (
             <p className="mt-1 text-sm text-red-600">{errors.username}</p>
           )}
@@ -86,8 +95,16 @@ const RegisterForm = ({ onSubmit, isSubmitting }) => {
             required
             value={formData.fullName}
             onChange={handleChange}
-            className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-          />
+            style={{
+              width: "100%",
+              padding: "14px", // Bigger padding
+              fontSize: "18px", // Bigger font size
+              height: "40px", // Taller input box
+              border: "1px solid #ccc",
+              borderRadius: "8px",
+              boxShadow: "2px 2px 5px rgba(0, 0, 0, 0.1)"
+            }}
+            />
           {errors.fullName && (
             <p className="mt-1 text-sm text-red-600">{errors.fullName}</p>
           )}
@@ -107,7 +124,15 @@ const RegisterForm = ({ onSubmit, isSubmitting }) => {
             required
             value={formData.password}
             onChange={handleChange}
-            className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+            style={{
+              width: "100%",
+              padding: "14px", // Bigger padding
+              fontSize: "18px", // Bigger font size
+              height: "40px", // Taller input box
+              border: "1px solid #ccc",
+              borderRadius: "8px",
+              boxShadow: "2px 2px 5px rgba(0, 0, 0, 0.1)"
+            }}
           />
           {errors.password && (
             <p className="mt-1 text-sm text-red-600">{errors.password}</p>
@@ -128,7 +153,15 @@ const RegisterForm = ({ onSubmit, isSubmitting }) => {
             required
             value={formData.confirmPassword}
             onChange={handleChange}
-            className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+            style={{
+              width: "100%",
+              padding: "14px", // Bigger padding
+              fontSize: "18px", // Bigger font size
+              height: "40px", // Taller input box
+              border: "1px solid #ccc",
+              borderRadius: "8px",
+              boxShadow: "2px 2px 5px rgba(0, 0, 0, 0.1)"
+            }}
           />
           {errors.confirmPassword && (
             <p className="mt-1 text-sm text-red-600">{errors.confirmPassword}</p>
@@ -146,7 +179,15 @@ const RegisterForm = ({ onSubmit, isSubmitting }) => {
             name="role"
             value={formData.role}
             onChange={handleChange}
-            className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+            style={{
+              width: "100%",
+              padding: "5px", // Bigger padding
+              fontSize: "14px", // Bigger font size
+              height: "40px", // Taller input box
+              border: "1px solid #ccc",
+              borderRadius: "8px",
+              boxShadow: "2px 2px 5px rgba(0, 0, 0, 0.1)"
+            }}
           >
             <option value="annotator">Annotator</option>
             <option value="admin">Admin</option>
@@ -155,13 +196,26 @@ const RegisterForm = ({ onSubmit, isSubmitting }) => {
       </div>
 
       <div>
-        <button
-          type="submit"
-          disabled={isSubmitting}
-          className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
-        >
-          {isSubmitting ? 'Registering...' : 'Register'}
-        </button>
+      <button
+  type="submit"
+  disabled={isSubmitting}
+  style={{
+    width: "100%",
+    backgroundColor: isSubmitting ? "#3b82f6" : "#2563eb", // Blue color
+    color: "white",
+    border: "none",
+    padding: "10px",
+    borderRadius: "5px",
+    cursor: isSubmitting ? "not-allowed" : "pointer",
+    opacity: isSubmitting ? 0.6 : 1,
+    fontSize: "14px",
+    fontWeight: "bold",
+    marginTop: "10px"
+  }}
+>
+  {isSubmitting ? 'Registering...' : 'Register'}
+</button>
+
       </div>
     </form>
   );
