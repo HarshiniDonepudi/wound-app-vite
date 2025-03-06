@@ -17,7 +17,8 @@ app = Flask(__name__)
 #     "http://localhost:5173",                
 #     "http://127.0.0.1:5173",                 
 # ]}})
-CORS(app, supports_credentials=True)
+# CORS(app, supports_credentials=True)
+CORS(app, resources={r"/api/*": {"origins": "https://wound-app-vite.vercel.app"}}, supports_credentials=True)
 
 
 
