@@ -95,24 +95,7 @@ const DashboardPage = () => {
         </p>
         
         {/* API Test Toggle */}
-        <button 
-          onClick={() => setShowApiTest(!showApiTest)}
-          className="api-test-toggle"
-          style={{
-            padding: '8px 12px',
-            background: '#f3f4f6',
-            border: '1px solid #d1d5db',
-            borderRadius: '4px',
-            marginTop: '10px',
-            cursor: 'pointer',
-            fontSize: '0.9rem',
-            visibility: 'false'
-          }}
-        >
-          {showApiTest ? 'Hide API Test' : 'Show API Test'}
-        </button>
         
-        {showApiTest && <ApiConnectionTest />}
       </div>
 
       {/* Stats Cards */}
