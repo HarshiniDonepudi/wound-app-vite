@@ -105,7 +105,8 @@ const DashboardPage = () => {
             borderRadius: '4px',
             marginTop: '10px',
             cursor: 'pointer',
-            fontSize: '0.9rem'
+            fontSize: '0.9rem',
+            visibility: 'false'
           }}
         >
           {showApiTest ? 'Hide API Test' : 'Show API Test'}
