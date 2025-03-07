@@ -297,26 +297,26 @@ def get_wounds_with_status():
 @jwt_required()
 def get_annotation_counts_by_category():
     try:
-        print("Starting get_annotation_counts_by_category endpoint")
-        
+        print("🚀 API Request Received: count-by-category")
+
+        # Debug connection
         if not connector.connection:
-            print("No connection, connecting to database")
+            print("⚠️ No database connection detected, reconnecting...")
             connector.connect()
-            
+            if not connector.connection:
+                print("❌ Database connection failed!")
+                return jsonify({"error": "Database connection failed"}), 500
+        
+        print("✅ Database connection is active.")
+
         cursor = connector.connection.cursor()
-        
-        # Check if any annotations exist
-        check_query = "SELECT COUNT(*) FROM wcr_wound_detection.wcr_wound.wound_annotations"
-        cursor.execute(check_query)
-        total_count = cursor.fetchone()[0]
-        print(f"Total annotations in database: {total_count}")
-        
-        if total_count == 0:
-            print("No annotations found in database")
-            cursor.close()
-            return jsonify([]), 200
-        
-        # Query for annotation counts by category
+
+        # Check if the cursor is valid
+        if cursor is None:
+            print("❌ Error: Cursor could not be created!")
+            return jsonify({"error": "Database cursor failed"}), 500
+
+        # Run the SQL query
         query = """
         SELECT 
             COALESCE(category, 'Uncategorized') AS category, 
@@ -324,29 +324,38 @@ def get_annotation_counts_by_category():
         FROM wcr_wound_detection.wcr_wound.wound_annotations
         GROUP BY category
         """
-        print(f"Executing query: {query}")
-        cursor.execute(query)
+        print(f"🔍 Executing Query: {query}")
+
+        cursor.execute(query)  # 🚀 Query Execution
         results = cursor.fetchall()
         
-        print(f"Raw query results: {results}")  # Debugging print
-        
-        # Format the results as objects for the frontend
+        print(f"📊 Raw Query Results: {results}")
+
+        if not results:
+            print("⚠️ No annotations found")
+            return jsonify({"logs": ["No annotations found"], "data": []}), 200
+
+        # Ensure all values are valid before converting
         formatted_results = []
-        for row in results:
-            category = row[0]
-            count = row[1] if row[1] is not None else 0  # Ensure count is never None
+        for i, row in enumerate(results):
+            category = row[0] if row[0] else "Uncategorized"
+            count = row[1] if row[1] is not None else 0  # Fixing None issue
+            
+            # Debugging: Print each row before adding it
+            print(f"🔹 Row {i}: category={category}, count={count}")
+
             formatted_results.append({"category": category, "count": count})
-        
-        print(f"Formatted results: {formatted_results}")
-        cursor.close()
-        
-        return jsonify(formatted_results), 200
-        
+
+        print(f"✅ Processed Data: {formatted_results}")
+
+        return jsonify({"logs": ["Query executed successfully"], "data": formatted_results}), 200
+
     except Exception as e:
-        print(f"Error getting annotation counts: {str(e)}")
+        print(f"❌ Error before query execution: {str(e)}")
         import traceback
         traceback.print_exc()
         return jsonify({'error': str(e)}), 500
+
 
 
 
