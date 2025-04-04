@@ -51,34 +51,87 @@ class UserManager:
             print(f"Error creating users table: {str(e)}")
             raise
 
-    def create_user(self, username: str, password: str, full_name: str, role: str = "annotator") -> Optional[UserProfile]:
-        """Create a new user"""
-        try:
+# Updated create_user method for database/user_manager.py
+def create_user(self, username: str, password: str, full_name: str, role: str = "annotator") -> Optional[UserProfile]:
+    """Create a new user with improved error handling"""
+    try:
+        if not self.db.connection:
+            print("No database connection, attempting to connect...")
+            self.db.connect()
             if not self.db.connection:
-                self.db.connect()
-
-            # Check if username exists using %s placeholder
-            cursor = self.db.connection.cursor()
-            cursor.execute("SELECT 1 FROM wcr_wound_detection.wcr_wound.users WHERE username = %s", (username,))
-            if cursor.fetchone():
-                print(f"Username {username} already exists")
-                cursor.close()
+                print("ERROR: Failed to establish database connection")
                 return None
 
-            # Generate user_id and hash password
-            user_id = str(uuid.uuid4())
-            password_hash = hashlib.sha256(password.encode()).hexdigest()
-            current_time = datetime.now()
+        # Check if username exists - use a try/except block to catch any DB errors
+        cursor = None
+        try:
+            cursor = self.db.connection.cursor()
+            
+            # First check if the users table exists
+            table_check_query = """
+            SELECT * FROM information_schema.tables 
+            WHERE table_schema = 'wcr_wound_detection.wcr_wound' 
+            AND table_name = 'users'
+            """
+            
+            try:
+                cursor.execute(table_check_query)
+                tables = cursor.fetchall()
+                if not tables:
+                    print("WARNING: users table does not exist. Creating table...")
+                    self.create_user_table()  # Call method to create users table
+            except Exception as e:
+                print(f"ERROR checking for users table: {str(e)}")
+                # Assume table doesn't exist and try to create it
+                self.create_user_table()
 
-            # Insert new user using %s placeholders
-            query = """
-                INSERT INTO wcr_wound_detection.wcr_wound.users 
-                (user_id, username, password_hash, full_name, role, created_at, is_active)
-                VALUES (%s, %s, %s, %s, %s, %s, TRUE)
-                """
+            # Now check if username exists
+            username_query = f"""
+            SELECT 1 FROM wcr_wound_detection.wcr_wound.users 
+            WHERE username = '{username}'
+            """
+            
+            print(f"Executing query: {username_query}")
+            cursor.execute(username_query)
+            user_exists = cursor.fetchone()
+            
+            if user_exists:
+                print(f"Username '{username}' already exists in database")
+                cursor.close()
+                return None
                 
-            cursor.execute(query, (user_id, username, password_hash, full_name, role, current_time))
+        except Exception as e:
+            print(f"ERROR checking username: {str(e)}")
+            if cursor:
+                cursor.close()
+            # Continue with user creation despite the error
+        
+        # Generate user_id and hash password
+        user_id = str(uuid.uuid4())
+        password_hash = hashlib.sha256(password.encode()).hexdigest()
+        current_time = datetime.now()
+
+        print(f"Creating new user: username='{username}', id='{user_id}', role='{role}'")
+        
+        try:
+            # Start fresh with a new cursor
+            if cursor:
+                cursor.close()
+            cursor = self.db.connection.cursor()
+            
+            # Insert new user using string formatting (Databricks specific)
+            query = f"""
+            INSERT INTO wcr_wound_detection.wcr_wound.users 
+            (user_id, username, password_hash, full_name, role, created_at, is_active)
+            VALUES 
+            ('{user_id}', '{username}', '{password_hash}', '{full_name}', '{role}', '{current_time}', TRUE)
+            """
+            
+            print(f"Executing insert query: {query}")
+            cursor.execute(query)
             self.db.connection.commit()
+            print(f"User created successfully: {username}")
+            
             cursor.close()
 
             return UserProfile(
@@ -87,10 +140,18 @@ class UserManager:
                 full_name=full_name,
                 role=role
             )
-
+            
         except Exception as e:
-            print(f"Error creating user: {str(e)}")
+            print(f"ERROR inserting user: {str(e)}")
+            if cursor:
+                cursor.close()
             return None
+
+    except Exception as e:
+        print(f"CRITICAL ERROR creating user: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return None
 
 
     def authenticate_user(self, username: str, password: str) -> Optional[UserProfile]:
