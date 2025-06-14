@@ -1,8 +1,38 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { getAllWounds, getConfigOptions } from '../services/woundService';
 import ApiConnectionTest from '../components/ApiConnectionTest';
+
+const DashboardActionButton = ({ color, hoverColor, icon, children, onClick, title }) => (
+  <button
+    onClick={onClick}
+    style={{
+      background: color,
+      color: 'white',
+      border: 'none',
+      borderRadius: 12,
+      padding: '18px 0',
+      fontWeight: 600,
+      fontSize: '1.1em',
+      cursor: 'pointer',
+      boxShadow: `0 2px 12px ${color === '#2563eb' ? 'rgba(37,99,235,0.08)' : 'rgba(220,38,38,0.08)'}`,
+      width: 260,
+      transition: 'background 0.2s',
+      outline: 'none',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 10
+    }}
+    onMouseOver={e => e.currentTarget.style.background = hoverColor}
+    onMouseOut={e => e.currentTarget.style.background = color}
+    title={title}
+  >
+    {icon}
+    {children}
+  </button>
+);
 
 const DashboardPage = () => {
   const { currentUser } = useAuth();
@@ -13,6 +43,11 @@ const DashboardPage = () => {
   });
   const [loading, setLoading] = useState(true);
   const [showApiTest, setShowApiTest] = useState(false);
+  const [expertReviewWounds, setExpertReviewWounds] = useState([]);
+  const [showReviewModal, setShowReviewModal] = useState(false);
+  const [showOmittedModal, setShowOmittedModal] = useState(false);
+  const [omittedWounds, setOmittedWounds] = useState([]);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const loadDashboardData = async () => {
@@ -47,6 +82,20 @@ const DashboardPage = () => {
             user: currentUser.username
           }
         ];
+
+        // Find wounds needing expert review (frontend only)
+        const reviewWounds = wounds.filter(wound => {
+          const reviewStatus = localStorage.getItem(`wound_review_status_${wound.id}`);
+          return wound.annotated && reviewStatus === 'expert_review';
+        });
+        setExpertReviewWounds(reviewWounds);
+
+        // Find omitted wounds (frontend only)
+        const omitted = wounds.filter(wound => {
+          const reviewStatus = localStorage.getItem(`wound_review_status_${wound.id}`);
+          return wound.annotated && reviewStatus === 'omitted';
+        });
+        setOmittedWounds(omitted);
 
         setStats({
           totalWounds: wounds.length,
@@ -158,6 +207,42 @@ const DashboardPage = () => {
         </div>
       </div>
 
+
+{currentUser.role === 'admin' && (
+  <div className="dashboard-card" style={{ width: '100%', margin: '32px auto', padding: '16px 16px', background: '#fff', borderRadius: 12, boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}>
+    <div className="dashboard-actions" style={{ display: 'flex', flexDirection: 'row', gap: '12px', justifyContent: 'center', alignItems: 'stretch' }}>
+      <div
+        className="dashboard-action dashboard-action--primary"
+        style={{ cursor: 'pointer', minHeight: 40, padding: '8px 0', flex: 1 }}
+        onClick={() => navigate('/admin/review-wounds')}
+        title="View all wounds marked for expert review"
+      >
+        <div className="dashboard-action__icon-wrapper">
+          <div className="dashboard-action__icon-bg" style={{ background: '#e0e7ff' }}>
+            <svg className="dashboard-action__icon" width="18" height="18" fill="none" stroke="#3b82f6" strokeWidth="2" viewBox="0 0 24 24"><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+          </div>
+        </div>
+        <h3 className="dashboard-action__title" style={{ fontSize: '1em', margin: '6px 0 2px 0' }}>Expert Review</h3>
+        <p className="dashboard-action__desc" style={{ fontSize: '0.95em', margin: 0 }}>View wounds for review</p>
+      </div>
+      <div
+        className="dashboard-action dashboard-action--danger"
+        style={{ cursor: 'pointer', minHeight: 60, padding: '8px 0', flex: 1 }}
+        onClick={() => navigate('/admin/omitted-wounds')}
+        title="View all wounds marked as omitted"
+      >
+        <div className="dashboard-action__icon-wrapper">
+          <div className="dashboard-action__icon-bg" style={{ background: '#fee2e2' }}>
+            <svg className="dashboard-action__icon" width="18" height="18" fill="none" stroke="#f87171" strokeWidth="2" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12"/></svg>
+          </div>
+        </div>
+        <h3 className="dashboard-action__title" style={{ fontSize: '1em', margin: '6px 0 2px 0' }}>Omitted</h3>
+        <p className="dashboard-action__desc" style={{ fontSize: '0.95em', margin: 0 }}>View omitted wounds</p>
+      </div>
+    </div>
+  </div>
+)}
+
       {/* Quick Actions and Recent Activity */}
       <div className="dashboard-grid">
         {/* Quick Actions */}
@@ -189,6 +274,8 @@ const DashboardPage = () => {
               <h3 className="dashboard-action__title">My Annotations</h3>
               <p className="dashboard-action__desc">View recent annotations</p>
             </Link>
+
+       
           </div>
         </div>
 

@@ -2,8 +2,6 @@ from databricks import sql
 from config import Config
 from dataclasses import dataclass
 from typing import Optional, Dict, Any
-from datetime import datetime
-import json
 import uuid
 
 @dataclass
@@ -262,7 +260,7 @@ class DatabricksConnector:
 
 
     def get_all_wound_paths_with_status(self) -> list:
-        """Get all unique image paths with their annotation status"""
+        """Get all unique image paths with their annotation status and annotator(s)"""
         try:
             if not self.connection:
                 self.connect()
@@ -271,12 +269,21 @@ class DatabricksConnector:
             SELECT 
                 w.WoundAssessmentID as id, 
                 w.path,
-                CASE WHEN a.wound_assessment_id IS NOT NULL THEN 1 ELSE 0 END as has_annotations
+                CASE WHEN a.wound_assessment_id IS NOT NULL THEN 1 ELSE 0 END as has_annotations,
+                COALESCE(ann.annotators, '') as annotators
             FROM wcr_wound_detection.wcr_wound.wcr_annotation_initial w
             LEFT JOIN (
                 SELECT DISTINCT wound_assessment_id 
                 FROM wcr_wound_detection.wcr_wound.wound_annotations
             ) a ON w.WoundAssessmentID = a.wound_assessment_id
+            LEFT JOIN (
+                SELECT 
+                    wound_assessment_id, 
+                    STRING_AGG(DISTINCT u.username, ', ') as annotators
+                FROM wcr_wound_detection.wcr_wound.wound_annotations wa
+                JOIN wcr_wound_detection.wcr_wound.users u ON wa.created_by = u.user_id
+                GROUP BY wound_assessment_id
+            ) ann ON w.WoundAssessmentID = ann.wound_assessment_id
             ORDER BY w.path
             """
 
@@ -503,3 +510,144 @@ class DatabricksConnector:
         if self.connection:
             self.connection.close()
             self.connection = None
+
+    def update_wound_status(self, wound_assessment_id: int, status: str) -> bool:
+        """Update the status of a wound (per wound)"""
+        try:
+            if not self.connection:
+                self.connect()
+            query = f"""
+            UPDATE wcr_wound_detection.wcr_wound.wcr_annotation_initial
+            SET status = %s
+            WHERE WoundAssessmentID = %s
+            """
+            cursor = self.connection.cursor()
+            cursor.execute(query, (status, wound_assessment_id))
+            self.connection.commit()
+            cursor.close()
+            return True
+        except Exception as e:
+            print(f"Error updating wound status: {str(e)}")
+            return False
+
+    def add_to_review_queue(self, wound_id: int, requested_by: str):
+        if not self.connection:
+            self.connect()
+        query = (
+            "INSERT INTO wound_review_queue (wound_id, requested_by) "
+            f"VALUES ({wound_id}, '{requested_by}')"
+        )
+        cursor = self.connection.cursor()
+        cursor.execute(query)
+        self.connection.commit()
+        cursor.close()
+
+    def get_review_queue(self):
+        if not self.connection:
+            self.connect()
+        query = (
+            "SELECT q.wound_id, w.path, w.WoundType, w.WoundLocationLocation, "
+            "w.PatientID, q.requested_by, q.requested_at "
+            "FROM wound_review_queue q "
+            "JOIN wcr_wound_detection.wcr_wound.wcr_annotation_initial w "
+            "ON q.wound_id = w.WoundAssessmentID "
+            "ORDER BY q.requested_at DESC"
+        )
+        cursor = self.connection.cursor()
+        cursor.execute(query)
+        results = cursor.fetchall()
+        cursor.close()
+        wounds = []
+        for row in results:
+            wounds.append({
+                'id': row[0],
+                'path': row[1],
+                'wound_type': row[2],
+                'body_location': row[3],
+                'patient_id': row[4],
+                'requested_by': row[5],
+                'requested_at': row[6]
+            })
+        return wounds
+
+    def create_review_queue_table(self):
+        """Create the wound_review_queue table if it doesn't exist"""
+        try:
+            if not self.connection:
+                self.connect()
+            query = (
+                "CREATE TABLE IF NOT EXISTS wound_review_queue ("
+                "id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY, "
+                "wound_id INT NOT NULL, "
+                "requested_by STRING, "
+                "requested_at TIMESTAMP"
+                ")"
+            )
+            cursor = self.connection.cursor()
+            cursor.execute(query)
+            self.connection.commit()
+            cursor.close()
+            print("Review queue table created or verified successfully")
+        except Exception as e:
+            print(f"Error creating review queue table: {str(e)}")
+
+    def create_omit_queue_table(self):
+        """Create the wound_omit_queue table if it doesn't exist"""
+        try:
+            if not self.connection:
+                self.connect()
+            query = (
+                "CREATE TABLE IF NOT EXISTS wound_omit_queue ("
+                "id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY, "
+                "wound_id INT NOT NULL, "
+                "requested_by STRING, "
+                "requested_at TIMESTAMP"
+                ")"
+            )
+            cursor = self.connection.cursor()
+            cursor.execute(query)
+            self.connection.commit()
+            cursor.close()
+            print("Omit queue table created or verified successfully")
+        except Exception as e:
+            print(f"Error creating omit queue table: {str(e)}")
+
+    def add_to_omit_queue(self, wound_id: int, requested_by: str):
+        if not self.connection:
+            self.connect()
+        query = (
+            "INSERT INTO wound_omit_queue (wound_id, requested_by, requested_at) "
+            f"VALUES ({wound_id}, '{requested_by}', CURRENT_TIMESTAMP)"
+        )
+        cursor = self.connection.cursor()
+        cursor.execute(query)
+        self.connection.commit()
+        cursor.close()
+
+    def get_omit_queue(self):
+        if not self.connection:
+            self.connect()
+        query = (
+            "SELECT q.wound_id, w.path, w.WoundType, w.WoundLocationLocation, "
+            "w.PatientID, q.requested_by, q.requested_at "
+            "FROM wound_omit_queue q "
+            "JOIN wcr_wound_detection.wcr_wound.wcr_annotation_initial w "
+            "ON q.wound_id = w.WoundAssessmentID "
+            "ORDER BY q.requested_at DESC"
+        )
+        cursor = self.connection.cursor()
+        cursor.execute(query)
+        results = cursor.fetchall()
+        cursor.close()
+        wounds = []
+        for row in results:
+            wounds.append({
+                'id': row[0],
+                'path': row[1],
+                'wound_type': row[2],
+                'body_location': row[3],
+                'patient_id': row[4],
+                'requested_by': row[5],
+                'requested_at': row[6]
+            })
+        return wounds

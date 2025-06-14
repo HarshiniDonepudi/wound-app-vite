@@ -19,20 +19,19 @@ export default function AnnotationPage() {
   const navigate = useNavigate();
 
   // Load all wounds for previous/next navigation
+  const loadAllWounds = async () => {
+    try {
+      const wounds = await getAllWounds();
+      setAllWounds(wounds);
+      // Find the index of the current wound
+      const index = wounds.findIndex(w => w.id.toString() === woundId.toString());
+      setCurrentWoundIndex(index);
+    } catch (err) {
+      console.error("Error loading all wounds:", err);
+    }
+  };
+
   useEffect(() => {
-    const loadAllWounds = async () => {
-      try {
-        const wounds = await getAllWounds();
-        setAllWounds(wounds);
-        
-        // Find the index of the current wound
-        const index = wounds.findIndex(w => w.id.toString() === woundId.toString());
-        setCurrentWoundIndex(index);
-      } catch (err) {
-        console.error("Error loading all wounds:", err);
-      }
-    };
-    
     loadAllWounds();
   }, [woundId]);
 
@@ -244,7 +243,7 @@ export default function AnnotationPage() {
         {/* Sidebar (Controls + Info) */}
         <div className="annotation-sidebar">
           <div className="annotation-sidebar__section">
-            <AnnotationControls />
+            <AnnotationControls onSaveSuccess={loadAllWounds} />
           </div>
 
           {selectedAnnotation && showInfo && (

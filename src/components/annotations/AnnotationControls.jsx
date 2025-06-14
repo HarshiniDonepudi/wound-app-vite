@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useAnnotations } from '../../hooks/useAnnotations';
 import SimpleBodyMapDialog from './SimpleBodyMapDialog';
+import axios from 'axios';
+import { updateWoundStatus, requestWoundReview } from '../../services/woundService';
 
-export default function AnnotationControls() {
+export default function AnnotationControls({ onSaveSuccess }) {
   const {
     selectedAnnotation,
     etiologyOptions,
@@ -20,13 +22,17 @@ export default function AnnotationControls() {
     updateAnnotation,
     deleteAnnotation,
     saveAnnotations,
-    loading
+    loading,
+    wound
   } = useAnnotations();
-
+  const woundId = wound?.wound_assessment_id || wound?.id;
   const [saveStatus, setSaveStatus] = useState({ message: '', type: '' });
   const [showBodyMapDialog, setShowBodyMapDialog] = useState(false);
   const [selectedSeverity, setSelectedSeverity] = useState('');
   const [availableSeverities, setAvailableSeverities] = useState([]);
+  const [statusMessage, setStatusMessage] = useState('');
+  const [statusType, setStatusType] = useState('');
+  const [statusLoading, setStatusLoading] = useState(false);
 
   // Update available severities based on wound category
   useEffect(() => {
@@ -201,11 +207,65 @@ export default function AnnotationControls() {
       if (success) {
         setSaveStatus({ message: 'Annotations saved successfully!', type: 'success' });
         setTimeout(() => setSaveStatus({ message: '', type: '' }), 3000);
+        if (onSaveSuccess) onSaveSuccess();
       } else {
         setSaveStatus({ message: 'Failed to save.', type: 'error' });
       }
     } catch (err) {
       setSaveStatus({ message: `Error: ${err.message}`, type: 'error' });
+    }
+  };
+
+  // Handler to update wound status (backend)
+  const updateWoundReviewStatus = async (newStatus) => {
+    if (!woundId) return;
+    setStatusLoading(true);
+    try {
+      await updateWoundStatus(woundId, newStatus);
+      setStatusMessage(`Status updated to '${newStatus.replace('_', ' ')}' successfully.`);
+      setStatusType('success');
+      if (onSaveSuccess) onSaveSuccess();
+    } catch (err) {
+      setStatusMessage('Failed to update status.');
+      setStatusType('error');
+    } finally {
+      setStatusLoading(false);
+    }
+  };
+  const clearWoundReviewStatus = async () => {
+    if (!woundId) return;
+    setStatusLoading(true);
+    try {
+      await updateWoundStatus(woundId, null); // Clear status
+      setStatusMessage('Review status cleared.');
+      setStatusType('success');
+      if (onSaveSuccess) onSaveSuccess();
+    } catch (err) {
+      setStatusMessage('Failed to clear status.');
+      setStatusType('error');
+    } finally {
+      setStatusLoading(false);
+    }
+  };
+  const getReviewStatus = () => {
+    // Use wound.status if available
+    return wound && wound.status ? wound.status : null;
+  };
+
+  // Handler to add wound to review queue (backend)
+  const handleRequestReview = async () => {
+    if (!woundId) return;
+    setStatusLoading(true);
+    try {
+      await requestWoundReview(woundId);
+      setStatusMessage('Wound sent for expert review.');
+      setStatusType('success');
+      if (onSaveSuccess) onSaveSuccess();
+    } catch (err) {
+      setStatusMessage('Failed to send for review.');
+      setStatusType('error');
+    } finally {
+      setStatusLoading(false);
     }
   };
 
@@ -215,6 +275,18 @@ export default function AnnotationControls() {
       <div className="controls-card__header">
         <h2>Annotation Controls</h2>
       </div>
+
+      {/* Show current wound status (frontend only) */}
+      {wound && (
+        <div className="wound-status-display">
+          <strong>Status:</strong> {getReviewStatus() ? getReviewStatus().replace('_', ' ').toUpperCase() : (wound.annotated ? 'ANNOTATED' : 'NOT ANNOTATED')}
+        </div>
+      )}
+
+      {/* Show status update message */}
+      {statusMessage && (
+        <div className={`save-status save-status--${statusType}`}>{statusMessage}</div>
+      )}
 
       {/* Currently selected Category/Location badges */}
       <div className="selection-preview">
@@ -384,11 +456,59 @@ export default function AnnotationControls() {
         onClose={() => setShowBodyMapDialog(false)}
       />
 
-      {/* Save Button */}
+      {/* Save, Review, Omit Buttons */}
       <div className="save-annotations">
         <button onClick={handleSaveAnnotations} disabled={loading} className="save-button">
           {loading ? 'Saving...' : 'Save Annotations'}
         </button>
+        <div className="review-omit-btn-group" style={{ display: 'flex', gap: '8px', marginTop: '12px', alignItems: 'center' }}>
+          {/* Mark for Expert Review / Clear Mark Review */}
+          {!getReviewStatus() && (
+            <button
+              onClick={handleRequestReview}
+              disabled={loading || !woundId}
+              className="review-button"
+              style={{ background: '#2563eb', color: 'white', border: 'none', borderRadius: 4, padding: '6px 14px', fontWeight: 500, cursor: 'pointer' }}
+              title="Send this wound for expert review"
+            >
+              Mark for Expert Review
+            </button>
+          )}
+          {getReviewStatus() === 'expert_review' && (
+            <button
+              onClick={clearWoundReviewStatus}
+              disabled={loading || !woundId}
+              className="clear-review-button"
+              style={{ background: '#6b7280', color: 'white', border: 'none', borderRadius: 4, padding: '6px 14px', fontWeight: 500, cursor: 'pointer' }}
+              title="Remove from expert review list"
+            >
+              Clear Mark Review
+            </button>
+          )}
+          {/* Omit / Clear Omit */}
+          {!getReviewStatus() && (
+            <button
+              onClick={() => updateWoundReviewStatus('omitted')}
+              disabled={loading || !woundId}
+              className="omit-button"
+              style={{ background: '#dc2626', color: 'white', border: 'none', borderRadius: 4, padding: '6px 14px', fontWeight: 500, cursor: 'pointer' }}
+              title="Omit this wound from annotation list"
+            >
+              Omit
+            </button>
+          )}
+          {getReviewStatus() === 'omitted' && (
+            <button
+              onClick={clearWoundReviewStatus}
+              disabled={loading || !woundId}
+              className="clear-omit-button"
+              style={{ background: '#6b7280', color: 'white', border: 'none', borderRadius: 4, padding: '6px 14px', fontWeight: 500, cursor: 'pointer' }}
+              title="Remove omit status"
+            >
+              Clear Omit
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Instructions */}

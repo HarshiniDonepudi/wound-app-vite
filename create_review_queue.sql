@@ -1,0 +1,1 @@
+CREATE TABLE wound_review_queue (id SERIAL PRIMARY KEY, wound_id INTEGER NOT NULL, requested_by VARCHAR(64), requested_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);

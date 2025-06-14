@@ -7,7 +7,11 @@ import DashboardPage from './pages/DashboardPage';
 import WoundListPage from './pages/WoundListPage';
 import AnnotationPage from './pages/AnnotationPage';
 import { AnnotationProvider } from './contexts/AnnotationContext';
-import AddAnnotatorPage from './pages/AddAnnotatorPage';
+import ManageUsersPage from './pages/ManageUsersPage';
+import StatisticsPage from './pages/StatisticsPage';
+import ProfilePage from './pages/ProfilePage';
+import ReviewWoundsPage from './pages/ReviewWoundsPage';
+import OmittedWoundsPage from './pages/OmittedWoundsPage';
 
 function App() {
   const { currentUser } = useAuth();
@@ -52,13 +56,32 @@ function App() {
           </ProtectedRoute>
         } />
         
-        <Route path="/add-annotator" element={
+        <Route path="/admin/users" element={
           <ProtectedRoute>
             <Layout>
-              <AddAnnotatorPage />
+              <ManageUsersPage />
             </Layout>
           </ProtectedRoute>
         } />
+        
+        <Route path="/admin/stats" element={
+          <ProtectedRoute>
+            <Layout>
+              <StatisticsPage />
+            </Layout>
+          </ProtectedRoute>
+        } />
+        
+        <Route path="/profile" element={
+          <ProtectedRoute>
+            <Layout>
+              <ProfilePage />
+            </Layout>
+          </ProtectedRoute>
+        } />
+        
+        <Route path="/admin/review-wounds" element={currentUser?.role === 'admin' ? <ReviewWoundsPage /> : <div>Access denied.</div>} />
+        <Route path="/admin/omitted-wounds" element={currentUser?.role === 'admin' ? <OmittedWoundsPage /> : <div>Access denied.</div>} />
       </Routes>
     </Router>
   );

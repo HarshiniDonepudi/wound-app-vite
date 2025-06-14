@@ -83,3 +83,54 @@ export const getConfigOptions = async () => {
     throw error;
   }
 };
+
+export const updateWoundStatus = async (woundId, status) => {
+  try {
+    const response = await apiClient.post(`/wounds/${woundId}/status`, { status });
+    return response.data;
+  } catch (error) {
+    console.error(`Error updating status for wound ${woundId}:`, error);
+    throw error;
+  }
+};
+
+export const getWoundsByStatus = async (status) => {
+  try {
+    const response = await apiClient.get('/wounds/with-status');
+    // Filter wounds by status (e.g., 'expert_review' or 'omitted')
+    return response.data.filter(wound => wound.status === status);
+  } catch (error) {
+    console.error(`Error fetching wounds by status '${status}':`, error);
+    throw error;
+  }
+};
+
+export const requestWoundReview = async (woundId) => {
+  try {
+    const response = await apiClient.post(`/wounds/${woundId}/request-review`);
+    return response.data;
+  } catch (error) {
+    console.error(`Error requesting review for wound ${woundId}:`, error);
+    throw error;
+  }
+};
+
+export const getReviewQueue = async () => {
+  try {
+    const response = await apiClient.get('/wounds/review-queue');
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching review queue:', error);
+    throw error;
+  }
+};
+
+export const getOmitQueue = async () => {
+  try {
+    const response = await apiClient.get('/wounds/omit-queue');
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching omit queue:', error);
+    throw error;
+  }
+};

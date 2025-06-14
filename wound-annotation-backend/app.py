@@ -32,6 +32,8 @@ jwt = JWTManager(app)
 
 db_manager = DatabaseConnectionManager()
 connector = db_manager.get_connector()
+connector.create_review_queue_table()
+connector.create_omit_queue_table()
 user_manager = UserManager(connector)
 
 def send_image_response(image_data):
@@ -52,23 +54,44 @@ def login():
     if not username or not password:
         return jsonify({'error': 'Username and password are required'}), 400
     
-    # BYPASS: Allow any user to log in without checking the database
-    dummy_user_profile = {
-        'user_id': 1,
-        'username': username,
-        'full_name': 'Test User',
-        'role': 'annotator'
-    }
-    access_token = create_access_token(identity=dummy_user_profile)
-    return jsonify({
-        'access_token': access_token,
-        'user': dummy_user_profile
-    }), 200
+    # Use the user_manager to authenticate against the database
+    user_profile = user_manager.authenticate_user(username, password)
+    if user_profile:
+        access_token = create_access_token(identity={
+            'user_id': user_profile.user_id,
+            'username': user_profile.username,
+            'full_name': user_profile.full_name,
+            'role': user_profile.role
+        })
+        return jsonify({
+            'access_token': access_token,
+            'user': {
+                'user_id': user_profile.user_id,
+                'username': user_profile.username,
+                'full_name': user_profile.full_name,
+                'role': user_profile.role
+            }
+        }), 200
+    else:
+        return jsonify({'error': 'Invalid username or password'}), 401
 
 # @app.route('/api/auth/register', methods=['POST'])
 # def register():
 #     # Registration endpoint disabled. Only admin can add users.
 #     return jsonify({'error': 'Registration is disabled. Contact admin.'}), 403
+
+# Move these endpoints to the top of the wound routes section
+@app.route('/api/wounds/review-queue', methods=['GET'])
+@jwt_required()
+def get_review_queue():
+    wounds = connector.get_review_queue()
+    return jsonify(wounds), 200
+
+@app.route('/api/wounds/omit-queue', methods=['GET'])
+@jwt_required()
+def get_omit_queue():
+    wounds = connector.get_omit_queue()
+    return jsonify(wounds), 200
 
 # Wound image routes
 @app.route('/api/wounds', methods=['GET'])
@@ -147,45 +170,35 @@ def save_annotations(wound_id):
     try:
         # Get user identity from JWT
         user_identity = get_jwt_identity()
-        username = user_identity['username']
-        
+        user_id = user_identity['user_id']
         # Get annotations from request
         annotations_data = request.json
         print(f"Received annotations data: {json.dumps(annotations_data, indent=2)}")  # Debug print
-        
         # Convert wound_id to integer
         wound_assessment_id = int(wound_id)
-        
         # Process annotations to add metadata
         annotations = []
         now = datetime.now().isoformat()
-        
         for ann in annotations_data:
-            # Ensure required fields are present
-            ann['created_by'] = ann.get('created_by', username)
-            ann['last_modified_by'] = username
+            # Always use the user ID for created_by and last_modified_by
+            ann['created_by'] = user_id
+            ann['last_modified_by'] = user_id
             ann['created_at'] = ann.get('created_at', now)
             ann['last_modified_at'] = now
-            
             # Ensure doctor_notes and severity are included (even if empty)
             if 'doctor_notes' not in ann:
                 ann['doctor_notes'] = ''
             if 'severity' not in ann:
                 ann['severity'] = ''
-                
             annotations.append(ann)
-            
         # Print annotations after processing
         print(f"Processed annotations to save: {json.dumps(annotations, indent=2)}")
-        
         # Save annotations to database
         success = connector.save_annotations(wound_assessment_id, annotations)
-        
         if success:
             return jsonify({'message': 'Annotations saved successfully'}), 200
         else:
             return jsonify({'error': 'Failed to save annotations'}), 500
-            
     except Exception as e:
         import traceback
         print(f"Error saving annotations: {str(e)}")
@@ -247,10 +260,16 @@ def get_wounds_with_status():
     try:
         # Get all wound paths
         wound_paths = connector.get_all_wound_paths_with_status()
-        
-        # Format response - the status field is now included from the database query
-        wounds = [{'id': path[0], 'path': path[1], 'annotated': bool(path[2])} for path in wound_paths]
-        
+        print("wound_paths sample:", wound_paths[:3])  # Debug print
+        # Format response - now includes annotators, fallback to '-' if empty
+        wounds = [
+            {
+                'id': path[0],
+                'path': path[1],
+                'annotated': bool(path[2]),
+                'annotators': path[3] if path[3] else '-'
+            } for path in wound_paths
+        ]
         return jsonify(wounds), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -342,13 +361,160 @@ def add_annotator():
 
     # Send email
     subject = 'Your Annotator Account Credentials'
-    body = f"Hello {full_name},\n\nYour annotator account has been created.\nUsername: {username}\nPassword: {password}\n\nPlease log in and change your password after first login."
+    body = f"""Hello {full_name},\n\nYour annotator account has been created.\n\nUsername: {username}\nPassword: {password}\n\nPlease log in and change your password after first login."""
     try:
         send_email(email, subject, body)
     except Exception as e:
         return jsonify({'error': f'User created but failed to send email: {str(e)}'}), 500
 
     return jsonify({'message': 'Annotator created and credentials sent via email.'}), 201
+
+@app.route('/api/admin/users', methods=['GET'])
+@jwt_required()
+def list_users():
+    user_identity = get_jwt_identity()
+    if user_identity['role'] != 'admin':
+        return jsonify({'error': 'Admin access required'}), 403
+    try:
+        users = user_manager.get_all_users()
+        # Convert user objects to dicts
+        users_list = [
+            {
+                'user_id': u.user_id,
+                'username': u.username,
+                'full_name': u.full_name,
+                'email': getattr(u, 'email', ''),
+                'role': u.role
+            } for u in users
+        ]
+        return jsonify({'users': users_list}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/admin/users/<int:user_id>', methods=['DELETE'])
+@jwt_required()
+def delete_user(user_id):
+    user_identity = get_jwt_identity()
+    if user_identity['role'] != 'admin':
+        return jsonify({'error': 'Admin access required'}), 403
+    try:
+        success = user_manager.delete_user(user_id)
+        if success:
+            return jsonify({'message': f'User {user_id} deleted.'}), 200
+        else:
+            return jsonify({'error': 'Failed to delete user'}), 400
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/admin/annotation-stats', methods=['GET'])
+@jwt_required()
+def annotation_stats():
+    user_identity = get_jwt_identity()
+    if user_identity['role'] != 'admin':
+        return jsonify({'error': 'Admin access required'}), 403
+    try:
+        # Query: count annotations per user and calculate rate
+        cursor = connector.connection.cursor()
+        query = '''
+            SELECT u.user_id, u.username, u.full_name, u.role,
+                   COUNT(a.annotation_id) as annotation_count,
+                   MIN(a.created_at) as first_annotation,
+                   MAX(a.created_at) as last_annotation
+            FROM wcr_wound_detection.wcr_wound.users u
+            LEFT JOIN wcr_wound_detection.wcr_wound.wound_annotations a
+              ON u.user_id = a.created_by
+            WHERE u.is_active = TRUE
+            GROUP BY u.user_id, u.username, u.full_name, u.role
+        '''
+        cursor.execute(query)
+        results = cursor.fetchall()
+        users = []
+        for row in results:
+            user_id, username, full_name, role, count, first, last = row
+            # Calculate annotation rate per day
+            if count and first and last and first != last:
+                days = (last - first).days or 1
+                rate = round(count / days, 2)
+            else:
+                rate = count if count else 0
+            users.append({
+                'user_id': user_id,
+                'username': username,
+                'full_name': full_name,
+                'role': role,
+                'annotation_count': count,
+                'annotation_rate_per_day': rate
+            })
+        return jsonify({'users': users}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/auth/change-password', methods=['POST'])
+@jwt_required()
+def change_password():
+    user_identity = get_jwt_identity()
+    user_id = user_identity['user_id']
+    data = request.json
+    old_password = data.get('old_password')
+    new_password = data.get('new_password')
+    if not old_password or not new_password:
+        return jsonify({'error': 'Old and new password are required'}), 400
+    success = user_manager.change_password(user_id, old_password, new_password)
+    if success:
+        return jsonify({'message': 'Password changed successfully'}), 200
+    else:
+        return jsonify({'error': 'Old password is incorrect or failed to change password'}), 400
+
+@app.route('/api/wounds/<int:wound_id>/status', methods=['POST'])
+@jwt_required()
+def update_wound_status(wound_id):
+    user_identity = get_jwt_identity()
+    allowed_roles = ['admin', 'annotator']
+    if user_identity['role'] not in allowed_roles:
+        return jsonify({'error': 'Access denied'}), 403
+    data = request.json
+    status = data.get('status')
+    username = user_identity['username']
+    try:
+        if status == 'omitted':
+            connector.add_to_omit_queue(wound_id, username)
+            return jsonify({'message': 'Wound added to omit queue'}), 200
+        elif status == 'clear_omit':
+            # Remove from omit queue
+            if not connector.connection:
+                connector.connect()
+            query = "DELETE FROM wound_omit_queue WHERE wound_id = ?"
+            cursor = connector.connection.cursor()
+            cursor.execute(query, (wound_id,))
+            connector.connection.commit()
+            cursor.close()
+            return jsonify({'message': 'Wound removed from omit queue'}), 200
+        elif status == 'expert_review':
+            connector.add_to_review_queue(wound_id, username)
+            return jsonify({'message': 'Wound added to review queue'}), 200
+        elif status == 'clear_review':
+            # Remove from review queue
+            if not connector.connection:
+                connector.connect()
+            query = "DELETE FROM wound_review_queue WHERE wound_id = ?"
+            cursor = connector.connection.cursor()
+            cursor.execute(query, (wound_id,))
+            connector.connection.commit()
+            cursor.close()
+            return jsonify({'message': 'Wound removed from review queue'}), 200
+        else:
+            return jsonify({'error': 'Invalid status value'}), 400
+    except Exception as e:
+        print(f"Error updating wound status: {e}")
+        return jsonify({'error': 'Failed to update status', 'details': str(e)}), 500
+
+@app.route('/api/wounds/<int:wound_id>/request-omit', methods=['POST'])
+@jwt_required()
+def request_wound_omit(wound_id):
+    user_identity = get_jwt_identity()
+    username = user_identity['username']
+    connector.add_to_omit_queue(wound_id, username)
+    return jsonify({'message': 'Wound added to omit queue'}), 200
 
 if __name__ == '__main__':
     app.run(debug=True, port=3000)

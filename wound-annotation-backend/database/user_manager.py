@@ -240,24 +240,29 @@ class UserManager:
             if not self.db.connection:
                 self.db.connect()
 
-            # Verify old password
             old_hash = hashlib.sha256(old_password.encode()).hexdigest()
             new_hash = hashlib.sha256(new_password.encode()).hexdigest()
 
-            query = """
-            UPDATE wcr_wound_detection.wcr_wound.users
-            SET password_hash = ?
-            WHERE user_id = ? AND password_hash = ?
-            """
-
             cursor = self.db.connection.cursor()
-            cursor.execute(query, (new_hash, user_id, old_hash))
-            success = cursor.rowcount > 0
+            # Check if the old password is correct
+            cursor.execute(
+                "SELECT 1 FROM wcr_wound_detection.wcr_wound.users "
+                "WHERE user_id = %s AND password_hash = %s AND is_active = TRUE",
+                (user_id, old_hash)
+            )
+            if not cursor.fetchone():
+                cursor.close()
+                return False  # Old password is incorrect
+
+            # Update the password
+            cursor.execute(
+                "UPDATE wcr_wound_detection.wcr_wound.users "
+                "SET password_hash = %s WHERE user_id = %s",
+                (new_hash, user_id)
+            )
             self.db.connection.commit()
             cursor.close()
-
-            return success
-
+            return True
         except Exception as e:
             print(f"Error changing password: {str(e)}")
             return False
@@ -311,6 +316,58 @@ class UserManager:
 
             return success
 
+        except Exception as e:
+            print(f"Error deactivating user: {str(e)}")
+            return False
+
+    def get_all_users(self):
+        """Return a list of all users as UserProfile objects"""
+        try:
+            if not self.db.connection:
+                self.db.connect()
+            query = """
+            SELECT user_id, username, full_name, role, last_login
+            FROM wcr_wound_detection.wcr_wound.users
+            WHERE is_active = TRUE
+            """
+            cursor = self.db.connection.cursor()
+            cursor.execute(query)
+            results = cursor.fetchall()
+            cursor.close()
+            users = [
+                UserProfile(
+                    user_id=row[0],
+                    username=row[1],
+                    full_name=row[2],
+                    role=row[3],
+                    last_login=row[4]
+                ) for row in results
+            ]
+            return users
+        except Exception as e:
+            print(f"Error fetching users: {str(e)}")
+            return []
+
+    def delete_user(self, user_id: str) -> bool:
+        """Deactivate a user account (set is_active to FALSE)"""
+        try:
+            if not self.db.connection:
+                self.db.connect()
+            query = """
+            UPDATE wcr_wound_detection.wcr_wound.users
+            SET is_active = FALSE
+            WHERE user_id = ?
+            """
+            cursor = self.db.connection.cursor()
+            cursor.execute(query, (user_id,))
+            success = cursor.rowcount > 0
+            self.db.connection.commit()
+            cursor.close()
+            # Remove any active sessions for this user
+            for token, uid in list(self.active_sessions.items()):
+                if uid == user_id:
+                    del self.active_sessions[token]
+            return success
         except Exception as e:
             print(f"Error deactivating user: {str(e)}")
             return False
