@@ -3,11 +3,11 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { useAuth } from './hooks/useAuth';
 import Layout from './components/layout/Layout';
 import LoginPage from './pages/LoginPage';
-import RegisterPage from './pages/RegisterPage';
 import DashboardPage from './pages/DashboardPage';
 import WoundListPage from './pages/WoundListPage';
 import AnnotationPage from './pages/AnnotationPage';
 import { AnnotationProvider } from './contexts/AnnotationContext';
+import AddAnnotatorPage from './pages/AddAnnotatorPage';
 
 function App() {
   const { currentUser } = useAuth();
@@ -24,7 +24,6 @@ function App() {
     <Router>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
-        <Route path="/register" element={<RegisterPage />} />
         
         {/* Protected routes */}
         <Route path="/" element={
@@ -49,6 +48,14 @@ function App() {
               <AnnotationProvider>
                 <AnnotationPage />
               </AnnotationProvider>
+            </Layout>
+          </ProtectedRoute>
+        } />
+        
+        <Route path="/add-annotator" element={
+          <ProtectedRoute>
+            <Layout>
+              <AddAnnotatorPage />
             </Layout>
           </ProtectedRoute>
         } />

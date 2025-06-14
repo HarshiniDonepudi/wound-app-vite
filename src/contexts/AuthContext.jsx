@@ -1,5 +1,4 @@
 import React, { createContext, useState, useEffect } from 'react';
-import { loginUser, registerUser } from '../services/authService';
 
 export const AuthContext = createContext();
 
@@ -24,38 +23,20 @@ export const AuthProvider = ({ children }) => {
     try {
       setLoading(true);
       setError(null);
-      
-      const { access_token, user } = await loginUser(username, password);
-      
-      // Store token and user data
-      localStorage.setItem('token', access_token);
-      localStorage.setItem('user', JSON.stringify(user));
-      
-      setCurrentUser(user);
-      return user;
+      // Call backend login
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Login failed');
+      localStorage.setItem('token', data.access_token);
+      localStorage.setItem('user', JSON.stringify(data.user));
+      setCurrentUser(data.user);
+      return data.user;
     } catch (err) {
       setError(err.message || 'Failed to login');
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const register = async (userData) => {
-    try {
-      setLoading(true);
-      setError(null);
-      
-      const { access_token, user } = await registerUser(userData);
-      
-      // Store token and user data
-      localStorage.setItem('token', access_token);
-      localStorage.setItem('user', JSON.stringify(user));
-      
-      setCurrentUser(user);
-      return user;
-    } catch (err) {
-      setError(err.message || 'Failed to register');
       throw err;
     } finally {
       setLoading(false);
@@ -73,7 +54,6 @@ export const AuthProvider = ({ children }) => {
     loading,
     error,
     login,
-    register,
     logout,
   };
 

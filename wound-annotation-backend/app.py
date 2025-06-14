@@ -9,6 +9,9 @@ import uuid
 import json
 from database.connection_manager import DatabaseConnectionManager
 from database.user_manager import UserManager
+from utils.email_utils import send_email
+import random
+import string
 
 app = Flask(__name__)
 # CORS(app, resources={r"/api/*": {"origins": [
@@ -73,40 +76,10 @@ def login():
     else:
         return jsonify({'error': 'Invalid username or password'}), 401
 
-@app.route('/api/auth/register', methods=['POST'])
-def register():
-    data = request.json
-    username = data.get('username')
-    password = data.get('password')
-    full_name = data.get('fullName')
-    role = data.get('role', 'annotator')
-    
-    if not username or not password or not full_name:
-        return jsonify({'error': 'All fields are required'}), 400
-    
-   
-    user_profile = user_manager.create_user(username, password, full_name, role)
-    
-    if user_profile:
-
-        access_token = create_access_token(identity={
-            'user_id': user_profile.user_id,
-            'username': user_profile.username,
-            'full_name': user_profile.full_name,
-            'role': user_profile.role
-        })
-        
-        return jsonify({
-            'access_token': access_token,
-            'user': {
-                'user_id': user_profile.user_id,
-                'username': user_profile.username,
-                'full_name': user_profile.full_name,
-                'role': user_profile.role
-            }
-        }), 201
-    else:
-        return jsonify({'error': 'Username already exists or an error occurred'}), 400
+# @app.route('/api/auth/register', methods=['POST'])
+# def register():
+#     # Registration endpoint disabled. Only admin can add users.
+#     return jsonify({'error': 'Registration is disabled. Contact admin.'}), 403
 
 # Wound image routes
 @app.route('/api/wounds', methods=['GET'])
@@ -356,9 +329,37 @@ def get_annotation_counts_by_category():
         traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
+@app.route('/api/admin/add-annotator', methods=['POST'])
+@jwt_required()
+def add_annotator():
+    user_identity = get_jwt_identity()
+    if user_identity['role'] != 'admin':
+        return jsonify({'error': 'Admin access required'}), 403
 
+    data = request.json
+    full_name = data.get('full_name')
+    username = data.get('username')
+    email = data.get('email')
+    if not full_name or not username or not email:
+        return jsonify({'error': 'Missing required fields'}), 400
 
+    # Generate random password
+    password = ''.join(random.choices(string.ascii_letters + string.digits, k=10))
 
+    # Create user
+    user_profile = user_manager.create_user(username, password, full_name, role='annotator')
+    if not user_profile:
+        return jsonify({'error': 'Username already exists or error occurred'}), 400
+
+    # Send email
+    subject = 'Your Annotator Account Credentials'
+    body = f"Hello {full_name},\n\nYour annotator account has been created.\nUsername: {username}\nPassword: {password}\n\nPlease log in and change your password after first login."
+    try:
+        send_email(email, subject, body)
+    except Exception as e:
+        return jsonify({'error': f'User created but failed to send email: {str(e)}'}), 500
+
+    return jsonify({'message': 'Annotator created and credentials sent via email.'}), 201
 
 if __name__ == '__main__':
     app.run(debug=True, port=3000)
