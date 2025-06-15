@@ -59,9 +59,21 @@ class UserManager:
 
             # Check if username exists using %s placeholder
             cursor = self.db.connection.cursor()
-            cursor.execute("SELECT 1 FROM wcr_wound_detection.wcr_wound.users WHERE username = %s", (username,))
+            cursor.execute(
+                "SELECT 1 FROM wcr_wound_detection.wcr_wound.users "
+                "WHERE username = %s",
+                (username,)
+            )
             if cursor.fetchone():
-                print(f"Username {username} already exists")
+                print(
+                    f"Username {username} already exists"
+                )
+                cursor.close()
+                return None
+
+            # Defensive: Check for missing fields
+            if not username or not password or not full_name or not role:
+                print("Missing required user fields")
                 cursor.close()
                 return None
 
@@ -71,13 +83,15 @@ class UserManager:
             current_time = datetime.now()
 
             # Insert new user using %s placeholders
-            query = """
-                INSERT INTO wcr_wound_detection.wcr_wound.users 
-                (user_id, username, password_hash, full_name, role, created_at, is_active)
-                VALUES (%s, %s, %s, %s, %s, %s, TRUE)
-                """
-                
-            cursor.execute(query, (user_id, username, password_hash, full_name, role, current_time))
+            query = (
+                "INSERT INTO wcr_wound_detection.wcr_wound.users "
+                "(user_id, username, password_hash, full_name, role, created_at, is_active) "
+                "VALUES (%s, %s, %s, %s, %s, %s, TRUE)"
+            )
+            cursor.execute(
+                query,
+                (user_id, username, password_hash, full_name, role, current_time)
+            )
             self.db.connection.commit()
             cursor.close()
 
@@ -89,9 +103,12 @@ class UserManager:
             )
 
         except Exception as e:
-            print(f"Error creating user: {str(e)}")
+            print(
+                f"Error creating user: {str(e)}"
+            )
+            import traceback
+            traceback.print_exc()
             return None
-
 
     def authenticate_user(self, username: str, password: str) -> Optional[UserProfile]:
         """Authenticate user and create session"""
