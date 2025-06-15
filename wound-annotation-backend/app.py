@@ -22,7 +22,9 @@ app = Flask(__name__)
 # ]}})
 # CORS(app, supports_credentials=True)
 #CORS(app, resources={r"/api/*": {"origins": "https://wound-app-vite.vercel.app"}}, supports_credentials=True)
-CORS(app, resources={r"/api/*": {"origins": "*"}}, supports_credentials=True)
+CORS(app, resources={r"/api/*": {"origins": [
+    "https://wound-app-vite.vercel.app"
+]}}, supports_credentials=True)
 
 
 app.config['JWT_SECRET_KEY'] = '29b9f018215f7e6c993acc91da9ea526' 
