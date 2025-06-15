@@ -60,21 +60,13 @@ class UserManager:
             # Check if username exists using %s placeholder
             cursor = self.db.connection.cursor()
             cursor.execute(
-                "SELECT COUNT(1) FROM wcr_wound_detection.wcr_wound.users "
+                "SELECT username FROM wcr_wound_detection.wcr_wound.users "
                 "WHERE LOWER(username) = LOWER(%s) AND username IS NOT NULL",
                 (username,)
             )
-            result = cursor.fetchone()
-            print(f"[DEBUG] Raw fetchone() result: {result} (type: {type(result)})")
-            count = 0
-            if result is not None:
-                if isinstance(result, (tuple, list)) and len(result) > 0:
-                    count = result[0]
-                elif isinstance(result, dict):
-                    count = list(result.values())[0]
-                elif hasattr(result, 'iloc'):
-                    count = result.iloc[0, 0]
-            if count and int(count) > 0:
+            results = cursor.fetchall()
+            print(f"[DEBUG] Raw fetchall() results: {results} (type: {type(results)})")
+            if results and len(results) > 0:
                 print(f"Username {username} already exists")
                 cursor.close()
                 return None
