@@ -26,18 +26,14 @@ export default function AnnotationPage() {
   const [physicianOrderLoading, setPhysicianOrderLoading] = useState(false);
   const [icd10Error, setICD10Error] = useState(null);
   const [physicianOrderError, setPhysicianOrderError] = useState(null);
-  const [page, setPage] = useState(1);
-  const [pageSize] = useState(20);
-  const [totalWounds, setTotalWounds] = useState(0);
 
   // Load all wounds for previous/next navigation
-  const loadAllWounds = async (pageToLoad = page) => {
+  const loadAllWounds = async () => {
     try {
-      const data = await getAllWounds(pageToLoad, pageSize);
-      setAllWounds(data.wounds);
-      setTotalWounds(data.total);
+      const wounds = await getAllWounds();
+      setAllWounds(wounds);
       // Find the index of the current wound
-      const index = data.wounds.findIndex(w => w.WoundAssessmentID?.toString() === woundId?.toString());
+      const index = wounds.findIndex(w => w.id.toString() === woundId.toString());
       setCurrentWoundIndex(index);
     } catch (err) {
       console.error("Error loading all wounds:", err);
@@ -45,43 +41,21 @@ export default function AnnotationPage() {
   };
 
   useEffect(() => {
-    loadAllWounds(page);
-  }, [woundId, page]);
-
-  // Pagination controls
-  const totalPages = Math.ceil(totalWounds / pageSize);
-  const goToPage = (p) => {
-    if (p >= 1 && p <= totalPages) setPage(p);
-  };
+    loadAllWounds();
+  }, [woundId]);
 
   // Navigation handlers
   const goToPreviousWound = () => {
     if (currentWoundIndex > 0) {
       const previousWound = allWounds[currentWoundIndex - 1];
-      navigate(`/annotate/${previousWound.WoundAssessmentID}`);
-    } else if (page > 1) {
-      // Go to previous page and select last wound
-      goToPage(page - 1);
-      setTimeout(() => {
-        loadAllWounds(page - 1).then(() => {
-          setCurrentWoundIndex(pageSize - 1);
-        });
-      }, 0);
+      navigate(`/annotate/${previousWound.id}`);
     }
   };
 
   const goToNextWound = () => {
     if (currentWoundIndex < allWounds.length - 1) {
       const nextWound = allWounds[currentWoundIndex + 1];
-      navigate(`/annotate/${nextWound.WoundAssessmentID}`);
-    } else if (page < totalPages) {
-      // Go to next page and select first wound
-      goToPage(page + 1);
-      setTimeout(() => {
-        loadAllWounds(page + 1).then(() => {
-          setCurrentWoundIndex(0);
-        });
-      }, 0);
+      navigate(`/annotate/${nextWound.id}`);
     }
   };
 
@@ -143,10 +117,10 @@ export default function AnnotationPage() {
         <div className="annotation-header__left">
           <h1 className="page-title">Annotate Wound</h1>
           <div className="page-badges">
-            <span className="badge badge--blue">Assessment ID: {woundId}</span>
-            {wound?.PatientNumber && (
+            <span className="badge badge--blue">ID: {woundId}</span>
+            {wound?.patient_id && (
               <span className="badge badge--green">
-                Patient Number: {wound.PatientNumber}
+                Patient ID: {wound.patient_id}
               </span>
             )}
             {annotations && annotations.length > 0 && (
@@ -157,7 +131,7 @@ export default function AnnotationPage() {
           </div>
           {wound && (
             <p className="header-subtitle">
-              {wound.WoundType} - {wound.Location}
+              {wound.wound_type} - {wound.body_location}
             </p>
           )}
           {/* Spatial Fields Toggle Button and Card */}
@@ -393,25 +367,6 @@ export default function AnnotationPage() {
           </Link>
         </div>
       </header>
-
-      {/* Pagination Controls */}
-      <div style={{display: 'flex', alignItems: 'center', gap: '0.5em', margin: '1em 0'}}>
-        <button onClick={() => goToPage(page - 1)} disabled={page <= 1} className="btn btn--outline">Prev</button>
-        {Array.from({length: totalPages}, (_, i) => i + 1).slice(Math.max(0, page-3), Math.min(totalPages, page+2)).map(p => (
-          <button
-            key={p}
-            onClick={() => goToPage(p)}
-            className={p === page ? 'btn btn--primary' : 'btn btn--outline'}
-            style={{minWidth: 36, fontWeight: p === page ? 700 : 400}}
-          >
-            {p}
-          </button>
-        ))}
-        <button onClick={() => goToPage(page + 1)} disabled={page >= totalPages} className="btn btn--outline">Next</button>
-        <span style={{marginLeft: 8, color: '#4a5568', fontSize: '0.95em'}}>
-          Page {page} of {totalPages} ({totalWounds} wounds)
-        </span>
-      </div>
 
       {/* Conditional render of the counter dialog */}
       {showCounter && (

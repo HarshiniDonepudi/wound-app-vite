@@ -114,11 +114,21 @@ def get_all_wounds():
 @jwt_required()
 def get_wound(wound_id):
     try:
+        # Get wound assessment data
         wound_info = connector.get_wound_assessment(wound_id)
+        
         if not wound_info:
             return jsonify({'error': 'Wound not found'}), 404
-        # Return all wound fields (except image_data)
-        wound_data = {k: v for k, v in wound_info.items() if k != 'image_data'}
+        
+        # Prepare response with wound info (without image data)
+        wound_data = {
+            'wound_assessment_id': wound_info.wound_assessment_id,
+            'wound_type': wound_info.wound_type,
+            'body_location': wound_info.body_location,
+            'patient_id': wound_info.patient_id,
+            'path': wound_info.path
+        }
+        
         return jsonify(wound_data), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -249,67 +259,19 @@ def get_category_colors():
 @jwt_required()
 def get_wounds_with_status():
     try:
-        page = int(request.args.get('page', 1))
-        page_size = int(request.args.get('page_size', 20))
-        offset = (page - 1) * page_size
-
-        # Get total count
-        cursor = connector.connection.cursor()
-        cursor.execute("SELECT COUNT(*) FROM wcr_wound_detection.wcr_wound.wcr_annotation_initial")
-        total_count = cursor.fetchone()[0]
-
-        # Get paginated wounds with all new fields
-        query = f"""
-        SELECT w.PatientID, w.WoundID, w.WoundAssessmentID, w.Location, w.WoundType,
-               w.Anterior_Dorsal, w.Left_Right, w.Medial_Lateral, w.Anterior_Posterior,
-               w.Proximal_Distal, w.Inferior_Superior, w.Stage_Depth, w.WoundStatus,
-               w.PatientNumber, w.VisitID, w.VisitDate, w.path,
-               CASE WHEN a.wound_assessment_id IS NOT NULL THEN 1 ELSE 0 END as has_annotations,
-               COALESCE(ann.annotators, '') as annotators
-        FROM wcr_wound_detection.wcr_wound.wcr_annotation_initial w
-        LEFT JOIN (
-            SELECT DISTINCT wound_assessment_id 
-            FROM wcr_wound_detection.wcr_wound.wound_annotations
-        ) a ON w.WoundAssessmentID = a.wound_assessment_id
-        LEFT JOIN (
-            SELECT 
-                wound_assessment_id, 
-                STRING_AGG(DISTINCT u.username, ', ') as annotators
-            FROM wcr_wound_detection.wcr_wound.wound_annotations wa
-            JOIN wcr_wound_detection.wcr_wound.users u ON wa.created_by = u.user_id
-            GROUP BY wound_assessment_id
-        ) ann ON w.WoundAssessmentID = ann.wound_assessment_id
-        ORDER BY w.path
-        LIMIT {page_size} OFFSET {offset}
-        """
-        cursor.execute(query)
-        results = cursor.fetchall()
-        cursor.close()
-
+        # Get all wound paths
+        wound_paths = connector.get_all_wound_paths_with_status()
+        print("wound_paths sample:", wound_paths[:3])  # Debug print
+        # Format response - now includes annotators, fallback to '-' if empty
         wounds = [
             {
-                'PatientID': row[0],
-                'WoundID': row[1],
-                'WoundAssessmentID': row[2],
-                'Location': row[3],
-                'WoundType': row[4],
-                'Anterior_Dorsal': row[5],
-                'Left_Right': row[6],
-                'Medial_Lateral': row[7],
-                'Anterior_Posterior': row[8],
-                'Proximal_Distal': row[9],
-                'Inferior_Superior': row[10],
-                'Stage_Depth': row[11],
-                'WoundStatus': row[12],
-                'PatientNumber': row[13],
-                'VisitID': row[14],
-                'VisitDate': row[15],
-                'path': row[16],
-                'annotated': bool(row[17]),
-                'annotators': row[18] if row[18] else '-'
-            } for row in results
+                'id': path[0],
+                'path': path[1],
+                'annotated': bool(path[2]),
+                'annotators': path[3] if path[3] else '-'
+            } for path in wound_paths
         ]
-        return jsonify({'wounds': wounds, 'total': total_count, 'page': page, 'page_size': page_size}), 200
+        return jsonify(wounds), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
     

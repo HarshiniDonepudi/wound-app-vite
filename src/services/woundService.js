@@ -2,10 +2,18 @@
 import apiClient from './api';
 
 
-export const getAllWounds = async (page = 1, pageSize = 20) => {
+export const getAllWounds = async () => {
   try {
-    const response = await apiClient.get(`/wounds/with-status?page=${page}&page_size=${pageSize}`);
-    return response.data;
+
+    try {
+      const response = await apiClient.get('/wounds/with-status');
+      return response.data;
+    } catch (err) {
+    
+      console.log("Annotation status endpoint not available, falling back to basic wounds endpoint");
+      const response = await apiClient.get('/wounds');
+      return response.data;
+    }
   } catch (error) {
     console.error('Error fetching wounds:', error);
     throw error;
