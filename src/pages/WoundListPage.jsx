@@ -160,20 +160,20 @@ const WoundListPage = () => {
             <div className="wound-list-filter-options">
               {['annotated', 'not_annotated', 'expert_review', 'omitted'].map((status) => (
                 <div className="wound-list-filter-option" key={status}>
-                  <input
-                    type="checkbox"
+                <input
+                  type="checkbox"
                     id={`status-${status}`}
                     checked={statusFilters[status]}
                     onChange={() => setStatusFilters(f => ({ ...f, [status]: !f[status] }))}
-                    className="wound-list-filter-checkbox"
-                  />
+                  className="wound-list-filter-checkbox"
+                />
                   <label htmlFor={`status-${status}`} className="wound-list-filter-checkbox-label">
                     {status === 'annotated' && 'Annotated'}
                     {status === 'not_annotated' && 'Not Annotated'}
                     {status === 'expert_review' && 'Expert Review'}
                     {status === 'omitted' && 'Omitted'}
-                  </label>
-                </div>
+                </label>
+              </div>
               ))}
             </div>
           </div>

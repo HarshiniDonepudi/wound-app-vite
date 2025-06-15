@@ -2,18 +2,10 @@
 import apiClient from './api';
 
 
-export const getAllWounds = async () => {
+export const getAllWounds = async (page = 1, pageSize = 20) => {
   try {
-
-    try {
-      const response = await apiClient.get('/wounds/with-status');
-      return response.data;
-    } catch (err) {
-    
-      console.log("Annotation status endpoint not available, falling back to basic wounds endpoint");
-      const response = await apiClient.get('/wounds');
-      return response.data;
-    }
+    const response = await apiClient.get(`/wounds/with-status?page=${page}&page_size=${pageSize}`);
+    return response.data;
   } catch (error) {
     console.error('Error fetching wounds:', error);
     throw error;
@@ -131,6 +123,26 @@ export const getOmitQueue = async () => {
     return response.data;
   } catch (error) {
     console.error('Error fetching omit queue:', error);
+    throw error;
+  }
+};
+
+export const getICD10Info = async (woundId) => {
+  try {
+    const response = await apiClient.get(`/wounds/${woundId}/icd10`);
+    return response.data;
+  } catch (error) {
+    console.error(`Error fetching ICD10 info for wound ${woundId}:`, error);
+    throw error;
+  }
+};
+
+export const getPhysicianOrder = async (woundId) => {
+  try {
+    const response = await apiClient.get(`/wounds/${woundId}/physician-order`);
+    return response.data;
+  } catch (error) {
+    console.error(`Error fetching physician order for wound ${woundId}:`, error);
     throw error;
   }
 };
