@@ -66,9 +66,11 @@ class Config:
     BODY_LOCATIONS = [
         "HEAD",
         "NECK",
-        "LOWER EXTREMITY",
+        "TORSO CHEST",
         "TORSO ABDOMEN",
         "TORSO BACK",
+        "UPPER EXTREMITY",
+        "LOWER EXTREMITY",
         "BUTTOCKS SACRUM",
         "PERINEUM"
     ]

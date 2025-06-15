@@ -118,9 +118,9 @@ export default function AnnotationPage() {
           <h1 className="page-title">Annotate Wound</h1>
           <div className="page-badges">
             <span className="badge badge--blue">ID: {woundId}</span>
-            {wound?.patient_id && (
+            {wound?.patient_number && (
               <span className="badge badge--green">
-                Patient ID: {wound.patient_id}
+                Patient Number: {wound.patient_number}
               </span>
             )}
             {annotations && annotations.length > 0 && (

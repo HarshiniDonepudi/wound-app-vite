@@ -9,7 +9,7 @@ class WoundInfo:
     wound_assessment_id: int
     wound_type: str
     body_location: str
-    patient_id: Optional[str] = None        
+    patient_number: Optional[str] = None        # Changed from patient_id
     image_data: Optional[bytes] = None
     path: Optional[str] = None
     annotations: Optional[Dict[str, Any]] = None
@@ -61,15 +61,13 @@ class DatabricksConnector:
         try:
             if not self.connection:
                 self.connect()
-                    
             assessment_id_int = int(assessment_id)
-                
             query = f"""
             SELECT 
                 WoundAssessmentID,
                 WoundType,
-                WoundLocationLocation,
-                PatientID,             
+                Location,
+                PatientNumber,             -- Changed from PatientID
                 path
             FROM wcr_wound_detection.wcr_wound.wcr_annotation_initial
             WHERE WoundAssessmentID = {assessment_id_int}
@@ -79,16 +77,14 @@ class DatabricksConnector:
             cursor.execute(query)
             result = cursor.fetchone()
             cursor.close()
-                
             if result:
                 image_path = result[4]
                 image_data = self.get_image_by_path(image_path)
-                    
                 return WoundInfo(
                     wound_assessment_id=result[0],
                     wound_type=result[1] if result[1] else "Unknown",
                     body_location=result[2] if result[2] else "Unknown",
-                    patient_id=result[3],  # Set patient id here
+                    patient_number=result[3],  # Set patient number here
                     image_data=image_data,
                     path=image_path,
                     annotations=None
@@ -482,25 +478,21 @@ class DatabricksConnector:
 
 
     def get_body_locations(self) -> list:
-        """Get all unique body locations"""
+        """Get all unique body locations (now from Location column)"""
         try:
             if not self.connection:
                 self.connect()
-
             query = """
-            SELECT DISTINCT WoundLocationLocation 
+            SELECT DISTINCT Location 
             FROM wcr_wound_detection.wcr_wound.wcr_annotation_initial
-            WHERE WoundLocationLocation IS NOT NULL
-            ORDER BY WoundLocationLocation
+            WHERE Location IS NOT NULL
+            ORDER BY Location
             """
-
             cursor = self.connection.cursor()
             cursor.execute(query)
             results = cursor.fetchall()
             cursor.close()
-
             return [row[0] for row in results]
-
         except Exception as e:
             print(f"Error fetching body locations: {str(e)}")
             return []
