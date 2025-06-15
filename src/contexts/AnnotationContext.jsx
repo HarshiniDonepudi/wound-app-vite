@@ -199,6 +199,16 @@ export const AnnotationProvider = ({ children }) => {
     }
   };
 
+  // Add a function to select an annotation and update related fields
+  const selectAnnotation = (annotation) => {
+    setSelectedAnnotation(annotation);
+    setCurrentCategory(annotation.category || '');
+    setCurrentLocation(annotation.location || '');
+    setBodyMapId(annotation.body_map_id || '');
+    setDoctorNotes(annotation.doctor_notes || '');
+    setSeverity(annotation.severity || '');
+  };
+
   const value = {
     wound,
     imageUrl,
