@@ -65,7 +65,16 @@ class UserManager:
                 (username,)
             )
             result = cursor.fetchone()
-            if result and result[0] > 0:
+            print(f"[DEBUG] Raw fetchone() result: {result} (type: {type(result)})")
+            count = 0
+            if result is not None:
+                if isinstance(result, (tuple, list)) and len(result) > 0:
+                    count = result[0]
+                elif isinstance(result, dict):
+                    count = list(result.values())[0]
+                elif hasattr(result, 'iloc'):
+                    count = result.iloc[0, 0]
+            if count and int(count) > 0:
                 print(f"Username {username} already exists")
                 cursor.close()
                 return None
