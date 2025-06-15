@@ -155,14 +155,13 @@ def get_annotations(wound_id):
     try:
         # Convert to integer for the database query
         wound_assessment_id = int(wound_id)
-        
         # Get annotations for the wound
         annotations = connector.get_annotations(wound_assessment_id)
-        
+        # Get spatial fields for the wound
+        spatial_fields = connector.get_wound_spatial_fields(wound_assessment_id)
         if not annotations:
-            return jsonify({'boxes': []}), 200
-        
-        return jsonify(annotations), 200
+            return jsonify({'boxes': [], 'spatial_fields': spatial_fields}), 200
+        return jsonify({**annotations, 'spatial_fields': spatial_fields}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 

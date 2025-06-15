@@ -40,6 +40,9 @@ export const AnnotationProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // Add spatial fields state
+  const [spatialFields, setSpatialFields] = useState(null);
+
   // Ensure these properties are initialized from existing annotations
   useEffect(() => {
     if (selectedAnnotation) {
@@ -89,6 +92,7 @@ export const AnnotationProvider = ({ children }) => {
         
         console.log("Loaded annotations:", processedAnnotations);
         setAnnotations(processedAnnotations);
+        setSpatialFields(annotationsData.spatial_fields || null);
         
       } catch (err) {
         setError(err.message || 'Failed to load data');
@@ -98,48 +102,6 @@ export const AnnotationProvider = ({ children }) => {
       }
     };
 
-  // Select an annotation
-  const selectAnnotation = (annotation) => {
-    setSelectedAnnotation(annotation);
-    
-    // Update current fields to match selected annotation
-    setCurrentCategory(annotation.category || '');
-    setCurrentLocation(annotation.location || '');
-    setBodyMapId(annotation.body_map_id || '');
-    setDoctorNotes(annotation.doctor_notes || '');
-    setSeverity(annotation.severity || '');
-  };
-
-  // Save annotations to the server
-  const saveAllAnnotations = async () => {
-    try {
-      setLoading(true);
-      
-      console.log("Preparing annotations for saving...");
-      
-     
-      const formattedAnnotations = annotations.map(({ id, ...rest }) => {
-      
-        return {
-          ...rest,
-          doctor_notes: rest.doctor_notes || '',
-          severity: rest.severity || ''
-        };
-      });
-      
-      console.log("Formatted annotations for API:", formattedAnnotations);
-      
-      await saveAnnotations(woundId, formattedAnnotations);
-      return true;
-    } catch (err) {
-      setError(err.message || 'Failed to save annotations');
-      console.error('Error saving annotations:', err);
-      return false;
-    } finally {
-      setLoading(false);
-    }
-  };
-    
     if (woundId) {
       loadData();
     }
@@ -207,23 +169,24 @@ export const AnnotationProvider = ({ children }) => {
     }
   };
 
-  // Select an annotation
-  const selectAnnotation = (annotation) => {
-    setSelectedAnnotation(annotation);
-    
-    // Update current fields to match selected annotation
-    setCurrentCategory(annotation.category);
-    setCurrentLocation(annotation.location);
-    setBodyMapId(annotation.body_map_id || '');
-  };
-
   // Save annotations to the server
   const saveAllAnnotations = async () => {
     try {
       setLoading(true);
       
-      // Format annotations for API (remove id field which is only used client-side)
-      const formattedAnnotations = annotations.map(({ id, ...rest }) => rest);
+      console.log("Preparing annotations for saving...");
+      
+     
+      const formattedAnnotations = annotations.map(({ id, ...rest }) => {
+      
+        return {
+          ...rest,
+          doctor_notes: rest.doctor_notes || '',
+          severity: rest.severity || ''
+        };
+      });
+      
+      console.log("Formatted annotations for API:", formattedAnnotations);
       
       await saveAnnotations(woundId, formattedAnnotations);
       return true;
@@ -260,7 +223,8 @@ export const AnnotationProvider = ({ children }) => {
     updateAnnotation,
     deleteAnnotation,
     selectAnnotation,
-    saveAnnotations: saveAllAnnotations
+    saveAnnotations: saveAllAnnotations,
+    spatialFields
   };
 
   return (

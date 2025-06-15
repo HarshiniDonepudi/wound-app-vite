@@ -11,7 +11,7 @@ import AnnotationCounter from '../components/annotations/AnnotationCounter';
 
 export default function AnnotationPage() {
   const { woundId } = useParams();
-  const { wound, loading, error, selectedAnnotation, annotations } = useAnnotations();
+  const { wound, loading, error, selectedAnnotation, annotations, spatialFields } = useAnnotations();
   const [showInfo, setShowInfo] = useState(true);
   const [showCounter, setShowCounter] = useState(false);
   const [allWounds, setAllWounds] = useState([]);
@@ -124,6 +124,29 @@ export default function AnnotationPage() {
             <p className="header-subtitle">
               {wound.wound_type} - {wound.body_location}
             </p>
+          )}
+          {/* Spatial Fields Card */}
+          {spatialFields && (
+            <div style={{
+              background: '#f7fafc',
+              border: '1px solid #e2e8f0',
+              borderRadius: '8px',
+              padding: '1em',
+              marginTop: '1em',
+              maxWidth: 400
+            }}>
+              <h4 style={{marginBottom: '0.5em', color: '#2d3748'}}>Wound Spatial Fields</h4>
+              <table style={{width: '100%', fontSize: '0.95em'}}>
+                <tbody>
+                  {Object.entries(spatialFields).map(([key, value]) => (
+                    <tr key={key}>
+                      <td style={{fontWeight: 500, color: '#4a5568', padding: '0.3em 0.5em'}}>{key.replace(/_/g, ' ')}</td>
+                      <td style={{color: '#2d3748', padding: '0.3em 0.5em'}}>{value ?? '-'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
         </div>
         <div className="annotation-header__right">

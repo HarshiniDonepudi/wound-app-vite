@@ -651,3 +651,28 @@ class DatabricksConnector:
                 'requested_at': row[6]
             })
         return wounds
+
+    def get_wound_spatial_fields(self, wound_assessment_id: int) -> Optional[dict]:
+        """Fetch spatial fields for a wound assessment from wcr_annotation_initial"""
+        try:
+            if not self.connection:
+                self.connect()
+            query = f"""
+            SELECT Anterior_Dorsal, Left_Right, Medial_Lateral, Anterior_Posterior, Proximal_Distal, Inferior_Superior, Stage_Depth
+            FROM wcr_wound_detection.wcr_wound.wcr_annotation_initial
+            WHERE WoundAssessmentID = {wound_assessment_id}
+            """
+            cursor = self.connection.cursor()
+            cursor.execute(query)
+            result = cursor.fetchone()
+            cursor.close()
+            if result:
+                fields = [
+                    'Anterior_Dorsal', 'Left_Right', 'Medial_Lateral', 'Anterior_Posterior',
+                    'Proximal_Distal', 'Inferior_Superior', 'Stage_Depth'
+                ]
+                return dict(zip(fields, result))
+            return None
+        except Exception as e:
+            print(f"Error fetching wound spatial fields: {str(e)}")
+            return None
