@@ -259,9 +259,14 @@ def get_category_colors():
 @jwt_required()
 def get_wounds_with_status():
     try:
+        # Pagination params
+        page = int(request.args.get('page', 1))
+        page_size = int(request.args.get('page_size', 20))
+        start = (page - 1) * page_size
+        end = start + page_size
         # Get all wound paths
         wound_paths = connector.get_all_wound_paths_with_status()
-        print("wound_paths sample:", wound_paths[:3])  # Debug print
+        total = len(wound_paths)
         # Format response - now includes annotators, fallback to '-' if empty
         wounds = [
             {
@@ -269,9 +274,9 @@ def get_wounds_with_status():
                 'path': path[1],
                 'annotated': bool(path[2]),
                 'annotators': path[3] if path[3] else '-'
-            } for path in wound_paths
+            } for path in wound_paths[start:end]
         ]
-        return jsonify(wounds), 200
+        return jsonify({'wounds': wounds, 'total': total, 'page': page, 'page_size': page_size}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
     

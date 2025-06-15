@@ -26,14 +26,18 @@ export default function AnnotationPage() {
   const [physicianOrderLoading, setPhysicianOrderLoading] = useState(false);
   const [icd10Error, setICD10Error] = useState(null);
   const [physicianOrderError, setPhysicianOrderError] = useState(null);
+  const [page, setPage] = useState(1);
+  const [pageSize] = useState(20);
+  const [totalWounds, setTotalWounds] = useState(0);
 
   // Load all wounds for previous/next navigation
-  const loadAllWounds = async () => {
+  const loadAllWounds = async (pageToLoad = page) => {
     try {
-      const wounds = await getAllWounds();
-      setAllWounds(wounds);
+      const data = await getAllWounds(pageToLoad, pageSize);
+      setAllWounds(data.wounds);
+      setTotalWounds(data.total);
       // Find the index of the current wound
-      const index = wounds.findIndex(w => w.id.toString() === woundId.toString());
+      const index = data.wounds.findIndex(w => w.id.toString() === woundId.toString());
       setCurrentWoundIndex(index);
     } catch (err) {
       console.error("Error loading all wounds:", err);
@@ -41,14 +45,21 @@ export default function AnnotationPage() {
   };
 
   useEffect(() => {
-    loadAllWounds();
-  }, [woundId]);
+    loadAllWounds(page);
+  }, [woundId, page]);
+
+  // Pagination handlers
+  const goToNextPage = () => setPage(p => p + 1);
+  const goToPrevPage = () => setPage(p => Math.max(1, p - 1));
+  const totalPages = Math.ceil(totalWounds / pageSize);
 
   // Navigation handlers
   const goToPreviousWound = () => {
     if (currentWoundIndex > 0) {
       const previousWound = allWounds[currentWoundIndex - 1];
       navigate(`/annotate/${previousWound.id}`);
+    } else if (page > 1) {
+      goToPrevPage();
     }
   };
 
@@ -56,6 +67,8 @@ export default function AnnotationPage() {
     if (currentWoundIndex < allWounds.length - 1) {
       const nextWound = allWounds[currentWoundIndex + 1];
       navigate(`/annotate/${nextWound.id}`);
+    } else if (page < totalPages) {
+      goToNextPage();
     }
   };
 
@@ -286,7 +299,7 @@ export default function AnnotationPage() {
           <div className="annotation-nav-buttons">
             <button
               onClick={goToPreviousWound}
-              disabled={currentWoundIndex <= 0}
+              disabled={currentWoundIndex <= 0 && page === 1}
               className="btn btn--outline"
               title="Previous wound"
             >
@@ -301,11 +314,11 @@ export default function AnnotationPage() {
               Previous
             </button>
             <span className="annotation-nav-counter">
-              {currentWoundIndex + 1} of {allWounds.length}
+              Page {page} of {totalPages} | {currentWoundIndex + 1} of {allWounds.length}
             </span>
             <button
               onClick={goToNextWound}
-              disabled={currentWoundIndex >= allWounds.length - 1}
+              disabled={currentWoundIndex >= allWounds.length - 1 && page === totalPages}
               className="btn btn--outline"
               title="Next wound"
             >
