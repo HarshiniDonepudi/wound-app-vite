@@ -406,7 +406,7 @@ def list_users():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@app.route('/api/admin/users/<int:user_id>', methods=['DELETE'])
+@app.route('/api/admin/users/<user_id>', methods=['DELETE', 'OPTIONS'])
 @jwt_required()
 def delete_user(user_id):
     user_identity = get_jwt_identity()

@@ -15,10 +15,17 @@ const StatisticsPage = () => {
       setError(null);
       try {
         const token = localStorage.getItem('token');
-        const res = await fetch('/api/admin/annotation-stats', {
+        const res = await fetch(`/api/admin/annotation-stats?ts=${Date.now()}`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
-        const data = await res.json();
+        let data = null;
+        try {
+          data = await res.json();
+        } catch {
+          setError('No data received from server');
+          setLoading(false);
+          return;
+        }
         if (res.ok) setStats(data);
         else setError(data.error || 'Failed to fetch stats');
       } catch (err) {
