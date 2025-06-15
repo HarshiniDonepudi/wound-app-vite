@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
+import apiClient from '../services/api';
 
 const cardStyle = {
   background: '#fff',
@@ -98,12 +99,12 @@ const ManageUsersPage = () => {
   useEffect(() => {
     // Fetch users on mount
     const fetchUsers = async () => {
-      const token = localStorage.getItem('token');
-      const res = await fetch('/api/admin/users', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const data = await res.json();
-      if (res.ok) setUsers(data.users || []);
+      try {
+        const { data } = await apiClient.get('/admin/users');
+        setUsers(data.users || []);
+      } catch (err) {
+        // Optionally handle error
+      }
     };
     fetchUsers();
   }, []);
@@ -118,30 +119,14 @@ const ManageUsersPage = () => {
     setMessage(null);
     setError(null);
     try {
-      const token = localStorage.getItem('token');
-      const res = await fetch('/api/admin/add-annotator', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify(form),
-      });
-      const data = await res.json();
-      if (res.ok) {
-        setMessage(data.message);
-        setForm({ full_name: '', username: '', email: '' });
-        // Refresh user list
-        const res2 = await fetch('/api/admin/users', {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        const data2 = await res2.json();
-        if (res2.ok) setUsers(data2.users || []);
-      } else {
-        setError(data.error || 'Failed to add annotator');
-      }
+      const { data } = await apiClient.post('/admin/add-annotator', form);
+      setMessage(data.message);
+      setForm({ full_name: '', username: '', email: '' });
+      // Refresh user list
+      const res2 = await apiClient.get('/admin/users');
+      setUsers(res2.data.users || []);
     } catch (err) {
-      setError('Network error');
+      setError(err.response?.data?.error || 'Failed to add annotator');
     } finally {
       setLoading(false);
     }
@@ -149,13 +134,12 @@ const ManageUsersPage = () => {
 
   const handleDelete = async (user_id) => {
     if (!window.confirm('Are you sure you want to delete this user?')) return;
-    const token = localStorage.getItem('token');
-    const res = await fetch(`/api/admin/users/${user_id}`, {
-      method: 'DELETE',
-      headers: { 'Authorization': `Bearer ${token}` }
-    });
-    if (res.ok) setUsers(users.filter(u => u.user_id !== user_id));
-    // Optionally show a message
+    try {
+      await apiClient.delete(`/admin/users/${user_id}`);
+      setUsers(users.filter(u => u.user_id !== user_id));
+    } catch (err) {
+      // Optionally handle error
+    }
   };
 
   if (!currentUser || currentUser.role !== 'admin') {
