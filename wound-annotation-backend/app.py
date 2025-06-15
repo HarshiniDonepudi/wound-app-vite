@@ -104,7 +104,12 @@ def get_all_wounds():
         wound_paths = connector.get_all_wound_paths()
         
         # Format response
-        wounds = [{'id': path.split('/')[-1], 'path': path} for path in wound_paths]
+        wounds = [
+            {
+                'id': path.split('/')[-1] if path else '',
+                'path': path or ''
+            } for path in wound_paths
+        ]
         
         return jsonify(wounds), 200
     except Exception as e:
@@ -229,7 +234,13 @@ def get_wounds_annotation_status():
         wound_paths = connector.get_all_wound_paths()
         
         # Format initial response
-        wounds = [{'id': path.split('/')[-1], 'path': path, 'annotated': False} for path in wound_paths]
+        wounds = [
+            {
+                'id': path.split('/')[-1] if path else '',
+                'path': path or '',
+                'annotated': False
+            } for path in wound_paths
+        ]
         
         # Check each wound for annotations
         for wound in wounds:
