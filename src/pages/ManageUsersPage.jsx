@@ -88,9 +88,18 @@ const errorStyle = {
   border: '1px solid #fed7d7',
 };
 
+const generateRandomPassword = (length = 10) => {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  let password = '';
+  for (let i = 0; i < length; i++) {
+    password += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return password;
+};
+
 const ManageUsersPage = () => {
   const { currentUser } = useAuth();
-  const [form, setForm] = useState({ full_name: '', username: '', email: '' });
+  const [form, setForm] = useState({ full_name: '', username: '', email: '', password: generateRandomPassword(), role: 'annotator' });
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState(null);
   const [error, setError] = useState(null);
@@ -113,6 +122,10 @@ const ManageUsersPage = () => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
+  const handleGeneratePassword = () => {
+    setForm({ ...form, password: generateRandomPassword() });
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -121,7 +134,7 @@ const ManageUsersPage = () => {
     try {
       const { data } = await apiClient.post('/admin/add-annotator', form);
       setMessage(data.message);
-      setForm({ full_name: '', username: '', email: '' });
+      setForm({ full_name: '', username: '', email: '', password: generateRandomPassword(), role: 'annotator' });
       // Refresh user list
       const res2 = await apiClient.get('/admin/users');
       setUsers(res2.data.users || []);
@@ -160,6 +173,16 @@ const ManageUsersPage = () => {
           <input name="username" value={form.username} onChange={handleChange} required style={inputStyle} />
           <label style={labelStyle}>Email</label>
           <input name="email" type="email" value={form.email} onChange={handleChange} required style={inputStyle} />
+          <label style={labelStyle}>Password</label>
+          <div style={{ display: 'flex', alignItems: 'center', marginBottom: '1em' }}>
+            <input name="password" value={form.password} onChange={handleChange} required style={{ ...inputStyle, marginBottom: 0, flex: 1 }} />
+            <button type="button" onClick={handleGeneratePassword} style={{ marginLeft: '1em', ...buttonStyle, padding: '0.5em 1em', background: '#805ad5' }}>Generate</button>
+          </div>
+          <label style={labelStyle}>Role</label>
+          <select name="role" value={form.role} onChange={handleChange} required style={inputStyle}>
+            <option value="annotator">Annotator</option>
+            <option value="admin">Admin</option>
+          </select>
           <button type="submit" disabled={loading} style={buttonStyle}>{loading ? 'Adding...' : 'Add Annotator'}</button>
         </form>
         {message && <div style={successStyle}>{message}</div>}
