@@ -114,21 +114,11 @@ def get_all_wounds():
 @jwt_required()
 def get_wound(wound_id):
     try:
-        # Get wound assessment data
         wound_info = connector.get_wound_assessment(wound_id)
-        
         if not wound_info:
             return jsonify({'error': 'Wound not found'}), 404
-        
-        # Prepare response with wound info (without image data)
-        wound_data = {
-            'wound_assessment_id': wound_info.wound_assessment_id,
-            'wound_type': wound_info.wound_type,
-            'body_location': wound_info.body_location,
-            'patient_id': wound_info.patient_id,
-            'path': wound_info.path
-        }
-        
+        # Return all wound fields (except image_data)
+        wound_data = {k: v for k, v in wound_info.items() if k != 'image_data'}
         return jsonify(wound_data), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500

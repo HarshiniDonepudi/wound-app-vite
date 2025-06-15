@@ -37,7 +37,7 @@ export default function AnnotationPage() {
       setAllWounds(data.wounds);
       setTotalWounds(data.total);
       // Find the index of the current wound
-      const index = data.wounds.findIndex(w => w.id.toString() === woundId.toString());
+      const index = data.wounds.findIndex(w => w.WoundAssessmentID?.toString() === woundId?.toString());
       setCurrentWoundIndex(index);
     } catch (err) {
       console.error("Error loading all wounds:", err);
@@ -58,7 +58,7 @@ export default function AnnotationPage() {
   const goToPreviousWound = () => {
     if (currentWoundIndex > 0) {
       const previousWound = allWounds[currentWoundIndex - 1];
-      navigate(`/annotate/${previousWound.id}`);
+      navigate(`/annotate/${previousWound.WoundAssessmentID}`);
     } else if (page > 1) {
       // Go to previous page and select last wound
       goToPage(page - 1);
@@ -73,7 +73,7 @@ export default function AnnotationPage() {
   const goToNextWound = () => {
     if (currentWoundIndex < allWounds.length - 1) {
       const nextWound = allWounds[currentWoundIndex + 1];
-      navigate(`/annotate/${nextWound.id}`);
+      navigate(`/annotate/${nextWound.WoundAssessmentID}`);
     } else if (page < totalPages) {
       // Go to next page and select first wound
       goToPage(page + 1);
@@ -157,7 +157,7 @@ export default function AnnotationPage() {
           </div>
           {wound && (
             <p className="header-subtitle">
-              {wound.wound_type} - {wound.body_location}
+              {wound.WoundType} - {wound.Location}
             </p>
           )}
           {/* Spatial Fields Toggle Button and Card */}
