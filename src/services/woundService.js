@@ -134,3 +134,14 @@ export const getOmitQueue = async () => {
     throw error;
   }
 };
+
+// Add paginated wounds fetcher
+export const getWoundsPaginated = async (page = 1, limit = 20) => {
+  try {
+    const response = await apiClient.get(`/wounds/with-status?page=${page}&limit=${limit}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching paginated wounds:', error);
+    throw error;
+  }
+};

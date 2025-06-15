@@ -43,6 +43,11 @@ export const AnnotationProvider = ({ children }) => {
   // Add spatial fields state
   const [spatialFields, setSpatialFields] = useState(null);
 
+  // Split loading states
+  const [woundLoading, setWoundLoading] = useState(true);
+  const [imageLoading, setImageLoading] = useState(true);
+  const [annotationsLoading, setAnnotationsLoading] = useState(true);
+
   // Ensure these properties are initialized from existing annotations
   useEffect(() => {
     if (selectedAnnotation) {
@@ -56,60 +61,52 @@ export const AnnotationProvider = ({ children }) => {
 
   // Load wound data, image, and config options
   useEffect(() => {
-    const loadData = async () => {
+    let imageObjectUrl = null;
+    const loadWound = async () => {
+      setWoundLoading(true);
       try {
-        setLoading(true);
-        
-        // Load configuration options
-        const config = await getConfigOptions();
-        setEtiologyOptions(config.etiologyOptions);
-        setBodyLocations(config.bodyLocations);
-        setCategoryColors(config.categoryColors);
-        
-        // Set default values for new annotations
-        if (config.etiologyOptions.length > 0) {
-          setCurrentCategory(config.etiologyOptions[0]);
-        }
-        if (config.bodyLocations.length > 0) {
-          setCurrentLocation(config.bodyLocations[0]);
-        }
-        
-        // Load wound data
         const woundData = await getWoundById(woundId);
         setWound(woundData);
-        
-        // Load wound image
+      } catch (err) {
+        setError(err.message || 'Failed to load wound');
+      } finally {
+        setWoundLoading(false);
+      }
+    };
+    const loadImage = async () => {
+      setImageLoading(true);
+      try {
         const imageBlob = await getWoundImage(woundId);
-        const url = URL.createObjectURL(imageBlob);
-        setImageUrl(url);
-        
-        // Load annotations
+        imageObjectUrl = URL.createObjectURL(imageBlob);
+        setImageUrl(imageObjectUrl);
+      } catch (err) {
+        setError(err.message || 'Failed to load image');
+      } finally {
+        setImageLoading(false);
+      }
+    };
+    const loadAnnotations = async () => {
+      setAnnotationsLoading(true);
+      try {
         const annotationsData = await getAnnotations(woundId);
         const processedAnnotations = annotationsData.boxes.map(box => ({
           ...box,
-          id: box.id || uuidv4() // Add unique ID for each annotation
+          id: box.id || uuidv4()
         }));
-        
-        console.log("Loaded annotations:", processedAnnotations);
         setAnnotations(processedAnnotations);
         setSpatialFields(annotationsData.spatial_fields || null);
-        
       } catch (err) {
-        setError(err.message || 'Failed to load data');
-        console.error('Error loading annotation data:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-    
-    if (woundId) {
-      loadData();
-    }
-    
-    // Cleanup function to revoke object URL
+        setError(err.message || 'Failed to load annotations');
+      } finally {
+        setAnnotationsLoading(false);
+      }
+    };
+    loadWound();
+    loadImage();
+    loadAnnotations();
     return () => {
-      if (imageUrl) {
-        URL.revokeObjectURL(imageUrl);
+      if (imageObjectUrl) {
+        URL.revokeObjectURL(imageObjectUrl);
       }
     };
   }, [woundId]);
@@ -234,7 +231,10 @@ export const AnnotationProvider = ({ children }) => {
     deleteAnnotation,
     selectAnnotation,
     saveAnnotations: saveAllAnnotations,
-    spatialFields
+    spatialFields,
+    woundLoading,
+    imageLoading,
+    annotationsLoading
   };
 
   return (

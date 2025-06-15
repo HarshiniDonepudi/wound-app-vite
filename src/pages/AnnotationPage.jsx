@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useAnnotations } from '../hooks/useAnnotations';
-import { getAllWounds } from '../services/woundService';
+import { getAllWounds, getWoundsPaginated } from '../services/woundService';
 
 // Import your annotation components
 import AnnotationCanvas from '../components/annotations/AnnotationCanvas';
@@ -11,48 +11,48 @@ import AnnotationCounter from '../components/annotations/AnnotationCounter';
 
 export default function AnnotationPage() {
   const { woundId } = useParams();
-  const { wound, loading, error, selectedAnnotation, annotations, spatialFields } = useAnnotations();
+  const { wound, loading, error, selectedAnnotation, annotations, spatialFields, woundLoading, imageLoading, annotationsLoading } = useAnnotations();
   const [showInfo, setShowInfo] = useState(true);
   const [showCounter, setShowCounter] = useState(false);
-  const [allWounds, setAllWounds] = useState([]);
+  const [woundNavIds, setWoundNavIds] = useState([]);
   const [currentWoundIndex, setCurrentWoundIndex] = useState(-1);
   const navigate = useNavigate();
   const [showSpatialFields, setShowSpatialFields] = useState(false);
 
-  // Load all wounds for previous/next navigation
-    const loadAllWounds = async () => {
-      try {
-        const wounds = await getAllWounds();
-        setAllWounds(wounds);
-        // Find the index of the current wound
-        const index = wounds.findIndex(w => w.id.toString() === woundId.toString());
-        setCurrentWoundIndex(index);
-      } catch (err) {
-        console.error("Error loading all wounds:", err);
-      }
-    };
-    
+  // Load only wound IDs for navigation
+  const loadWoundNavIds = async () => {
+    try {
+      // Fetch just IDs for navigation (assume backend supports ?fields=id)
+      const data = await getWoundsPaginated(1, 10000); // Large limit for now
+      setWoundNavIds(data.wounds.map(w => w.id));
+      const index = data.wounds.findIndex(w => w.id.toString() === woundId.toString());
+      setCurrentWoundIndex(index);
+    } catch (err) {
+      console.error("Error loading wound navigation IDs:", err);
+    }
+  };
+
   useEffect(() => {
-    loadAllWounds();
+    loadWoundNavIds();
   }, [woundId]);
 
   // Navigation handlers
   const goToPreviousWound = () => {
     if (currentWoundIndex > 0) {
-      const previousWound = allWounds[currentWoundIndex - 1];
-      navigate(`/annotate/${previousWound.id}`);
+      const previousWound = woundNavIds[currentWoundIndex - 1];
+      navigate(`/annotate/${previousWound}`);
     }
   };
 
   const goToNextWound = () => {
-    if (currentWoundIndex < allWounds.length - 1) {
-      const nextWound = allWounds[currentWoundIndex + 1];
-      navigate(`/annotate/${nextWound.id}`);
+    if (currentWoundIndex < woundNavIds.length - 1) {
+      const nextWound = woundNavIds[currentWoundIndex + 1];
+      navigate(`/annotate/${nextWound}`);
     }
   };
 
   // Loading State
-  if (loading) {
+  if (woundLoading) {
     return (
       <div className="annotation-page-loading">
         <div className="annotation-page-loading__inner">
@@ -147,11 +147,11 @@ export default function AnnotationPage() {
               Previous
             </button>
             <span className="annotation-nav-counter">
-              {currentWoundIndex + 1} of {allWounds.length}
+              {currentWoundIndex + 1} of {woundNavIds.length}
             </span>
             <button
               onClick={goToNextWound}
-              disabled={currentWoundIndex >= allWounds.length - 1}
+              disabled={currentWoundIndex >= woundNavIds.length - 1}
               className="btn btn--outline"
               title="Next wound"
             >
@@ -241,22 +241,29 @@ export default function AnnotationPage() {
               <span className="annotation-hint">Draw on image to annotate</span>
             </div>
             <div className="annotation-canvas-card__body">
-              <AnnotationCanvas />
+              {imageLoading ? (
+                <div className="spinner-border" style={{margin: '2em auto', display: 'block'}}></div>
+              ) : (
+                <AnnotationCanvas />
+              )}
             </div>
           </div>
 
           {/* Mobile Annotation Info */}
-          {selectedAnnotation && showInfo && (
+          {selectedAnnotation && showInfo && !annotationsLoading && (
             <div className="annotation-info-card mobile-only">
               <AnnotationInfo />
             </div>
+          )}
+          {annotationsLoading && (
+            <div className="spinner-border" style={{margin: '2em auto', display: 'block'}}></div>
           )}
         </div>
 
         {/* Sidebar (Controls + Info) */}
         <div className="annotation-sidebar">
           <div className="annotation-sidebar__section">
-            <AnnotationControls onSaveSuccess={loadAllWounds} />
+            <AnnotationControls onSaveSuccess={loadWoundNavIds} />
           </div>
 
           {selectedAnnotation && showInfo && (

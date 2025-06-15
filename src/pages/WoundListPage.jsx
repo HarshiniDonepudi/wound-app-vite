@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { getAllWounds, getReviewQueue, getOmitQueue } from '../services/woundService';
+import { getAllWounds, getReviewQueue, getOmitQueue, getWoundsPaginated } from '../services/woundService';
 
 const WoundListPage = () => {
   const [wounds, setWounds] = useState([]);
@@ -16,23 +16,26 @@ const WoundListPage = () => {
   });
   const [reviewQueue, setReviewQueue] = useState([]);
   const [omitQueue, setOmitQueue] = useState([]);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
 
   useEffect(() => {
     const loadWounds = async () => {
       try {
         setLoading(true);
         const [data, review, omit] = await Promise.all([
-          getAllWounds(),
+          getWoundsPaginated(page, 20),
           getReviewQueue(),
           getOmitQueue()
         ]);
-        // Map backend properties to frontend-friendly names
-        const mappedWounds = data.map(w => ({
+        // Assume backend returns { wounds: [], totalPages: N }
+        const mappedWounds = data.wounds.map(w => ({
           ...w,
           wound_type: w.wound_type || w.WoundType || '',
           body_location: w.body_location || w.WoundLocationLocation || ''
         }));
         setWounds(mappedWounds);
+        setTotalPages(data.totalPages || 1);
         setReviewQueue(review.map(w => w.id || w.wound_id));
         setOmitQueue(omit.map(w => w.id || w.wound_id));
       } catch (err) {
@@ -43,7 +46,7 @@ const WoundListPage = () => {
       }
     };
     loadWounds();
-  }, []);
+  }, [page]);
 
   const getReviewStatus = (woundId) => {
     if (reviewQueue.includes(woundId)) return 'expert_review';
@@ -315,8 +318,8 @@ const WoundListPage = () => {
           </div>
           <div className="wound-list-pagination">
             <div className="wound-list-pagination__mobile">
-              <button className="wound-list-pagination__btn">Previous</button>
-              <button className="wound-list-pagination__btn">Next</button>
+              <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}>Previous</button>
+              <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}>Next</button>
             </div>
             <div className="wound-list-pagination__desktop">
               <p className="wound-list-pagination__text">
