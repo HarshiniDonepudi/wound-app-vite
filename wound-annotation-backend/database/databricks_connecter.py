@@ -546,7 +546,7 @@ class DatabricksConnector:
         if not self.connection:
             self.connect()
         query = (
-            "SELECT q.wound_id, w.path, w.WoundType, w.WoundLocationLocation, "
+            "SELECT q.wound_id, w.path, w.WoundType, w.Location, "
             "w.PatientID, q.requested_by, q.requested_at "
             "FROM wound_review_queue q "
             "JOIN wcr_wound_detection.wcr_wound.wcr_annotation_initial w "
@@ -628,7 +628,7 @@ class DatabricksConnector:
         if not self.connection:
             self.connect()
         query = (
-            "SELECT q.wound_id, w.path, w.WoundType, w.WoundLocationLocation, "
+            "SELECT q.wound_id, w.path, w.WoundType, w.Location, "
             "w.PatientID, q.requested_by, q.requested_at "
             "FROM wound_omit_queue q "
             "JOIN wcr_wound_detection.wcr_wound.wcr_annotation_initial w "
