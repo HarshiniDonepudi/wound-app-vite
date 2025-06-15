@@ -61,7 +61,7 @@ class UserManager:
             cursor = self.db.connection.cursor()
             cursor.execute(
                 "SELECT 1 FROM wcr_wound_detection.wcr_wound.users "
-                "WHERE username = %s",
+                "WHERE username = %s AND username IS NOT NULL",
                 (username,)
             )
             if cursor.fetchone():
