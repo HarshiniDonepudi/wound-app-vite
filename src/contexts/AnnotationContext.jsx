@@ -97,11 +97,11 @@ export const AnnotationProvider = ({ children }) => {
       } catch (err) {
         setError(err.message || 'Failed to load data');
         console.error('Error loading annotation data:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
+    } finally {
+      setLoading(false);
+    }
+  };
+    
     if (woundId) {
       loadData();
     }

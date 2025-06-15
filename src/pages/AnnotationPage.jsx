@@ -20,18 +20,18 @@ export default function AnnotationPage() {
   const [showSpatialFields, setShowSpatialFields] = useState(false);
 
   // Load all wounds for previous/next navigation
-  const loadAllWounds = async () => {
-    try {
-      const wounds = await getAllWounds();
-      setAllWounds(wounds);
-      // Find the index of the current wound
-      const index = wounds.findIndex(w => w.id.toString() === woundId.toString());
-      setCurrentWoundIndex(index);
-    } catch (err) {
-      console.error("Error loading all wounds:", err);
-    }
-  };
-
+    const loadAllWounds = async () => {
+      try {
+        const wounds = await getAllWounds();
+        setAllWounds(wounds);
+        // Find the index of the current wound
+        const index = wounds.findIndex(w => w.id.toString() === woundId.toString());
+        setCurrentWoundIndex(index);
+      } catch (err) {
+        console.error("Error loading all wounds:", err);
+      }
+    };
+    
   useEffect(() => {
     loadAllWounds();
   }, [woundId]);
@@ -126,17 +126,6 @@ export default function AnnotationPage() {
               {wound.wound_type} - {wound.body_location}
             </p>
           )}
-          {/* Spatial Fields Toggle Button */}
-          {spatialFields && (
-            <button
-              type="button"
-              className="btn btn--outline"
-              style={{marginTop: '1em', marginBottom: '0.5em'}}
-              onClick={() => setShowSpatialFields(v => !v)}
-            >
-              {showSpatialFields ? 'Hide Spatial Fields' : 'Show Spatial Fields'}
-            </button>
-          )}
         </div>
         <div className="annotation-header__right">
           {/* Navigation buttons */}
@@ -224,6 +213,18 @@ export default function AnnotationPage() {
           </Link>
         </div>
       </header>
+
+      {/* Spatial Fields Toggle Button - now outside header, above main content */}
+      {spatialFields && (
+        <button
+          type="button"
+          className="btn btn--outline"
+          style={{marginTop: '1em', marginBottom: '0.5em'}}
+          onClick={() => setShowSpatialFields(v => !v)}
+        >
+          {showSpatialFields ? 'Hide Spatial Fields' : 'Show Spatial Fields'}
+        </button>
+      )}
 
       {/* Conditional render of the counter dialog */}
       {showCounter && (
