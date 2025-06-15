@@ -17,6 +17,8 @@ const OmittedWoundsPage = () => {
     load();
   }, []);
 
+  const filteredWounds = wounds.filter(w => w.status === 'omitted' || w.omitted === true);
+
   return (
     <div className="dashboard-container">
       <div className="dashboard-card" style={{ maxWidth: 900, margin: '32px auto', padding: 32, background: '#fff', borderRadius: 12, boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}>
@@ -46,7 +48,7 @@ const OmittedWoundsPage = () => {
         <h1 className="dashboard-section-title" style={{ marginBottom: 24 }}>Omitted Wounds</h1>
         {loading ? (
           <p>Loading...</p>
-        ) : wounds.length === 0 ? (
+        ) : filteredWounds.length === 0 ? (
           <p>No wounds are currently omitted.</p>
         ) : (
           <div className="wound-list-grid">
@@ -61,7 +63,7 @@ const OmittedWoundsPage = () => {
                 </tr>
               </thead>
               <tbody className="wound-list-table__body">
-                {wounds.map((wound) => (
+                {filteredWounds.map((wound) => (
                   <tr key={wound.id || wound.wound_id}>
                     <td className="wound-list-table__td">{wound.id || wound.wound_id}</td>
                     <td className="wound-list-table__td">{wound.path}</td>

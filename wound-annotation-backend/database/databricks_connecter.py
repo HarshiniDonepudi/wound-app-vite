@@ -259,44 +259,54 @@ class DatabricksConnector:
 
 
 
-    def get_all_wound_paths_with_status(self) -> list:
-        """Get all unique image paths with their annotation status and annotator(s)"""
+    def get_all_wound_paths_with_status(self, offset=0, limit=20) -> list:
+        """Get all unique image paths with their annotation status and annotator(s), paginated"""
         try:
             if not self.connection:
                 self.connect()
-
-            query = """
-            SELECT 
-                w.WoundAssessmentID as id, 
-                w.path,
-                CASE WHEN a.wound_assessment_id IS NOT NULL THEN 1 ELSE 0 END as has_annotations,
-                COALESCE(ann.annotators, '') as annotators
-            FROM wcr_wound_detection.wcr_wound.wcr_annotation_initial w
-            LEFT JOIN (
-                SELECT DISTINCT wound_assessment_id 
-                FROM wcr_wound_detection.wcr_wound.wound_annotations
-            ) a ON w.WoundAssessmentID = a.wound_assessment_id
-            LEFT JOIN (
-                SELECT 
-                    wound_assessment_id, 
-                    STRING_AGG(DISTINCT u.username, ', ') as annotators
-                FROM wcr_wound_detection.wcr_wound.wound_annotations wa
-                JOIN wcr_wound_detection.wcr_wound.users u ON wa.created_by = u.user_id
-                GROUP BY wound_assessment_id
-            ) ann ON w.WoundAssessmentID = ann.wound_assessment_id
-            ORDER BY w.path
-            """
-
+            query = (
+                f"""
+                SELECT w.WoundAssessmentID as id, w.path,
+                    CASE WHEN a.wound_assessment_id IS NOT NULL THEN 1 ELSE 0 END as has_annotations,
+                    COALESCE(ann.annotators, '') as annotators
+                FROM wcr_wound_detection.wcr_wound.wcr_annotation_initial w
+                LEFT JOIN (
+                    SELECT DISTINCT wound_assessment_id 
+                    FROM wcr_wound_detection.wcr_wound.wound_annotations
+                ) a ON w.WoundAssessmentID = a.wound_assessment_id
+                LEFT JOIN (
+                    SELECT wound_assessment_id, 
+                        STRING_AGG(DISTINCT u.username, ', ') as annotators
+                    FROM wcr_wound_detection.wcr_wound.wound_annotations wa
+                    JOIN wcr_wound_detection.wcr_wound.users u 
+                        ON wa.created_by = u.user_id
+                    GROUP BY wound_assessment_id
+                ) ann ON w.WoundAssessmentID = ann.wound_assessment_id
+                ORDER BY w.path
+                LIMIT {limit} OFFSET {offset}
+                """
+            )
             cursor = self.connection.cursor()
             cursor.execute(query)
             results = cursor.fetchall()
             cursor.close()
-
             return results
-
         except Exception as e:
             print(f"Error fetching image paths with status: {str(e)}")
             return []
+
+    def get_wound_count(self):
+        if not self.connection:
+            self.connect()
+        query = (
+            "SELECT COUNT(*) FROM "
+            "wcr_wound_detection.wcr_wound.wcr_annotation_initial"
+        )
+        cursor = self.connection.cursor()
+        cursor.execute(query)
+        count = cursor.fetchone()[0]
+        cursor.close()
+        return count
 
     def save_annotations(self, wound_assessment_id: int, annotations: list) -> bool:
         """Save annotations to database"""

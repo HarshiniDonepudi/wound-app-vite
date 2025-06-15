@@ -259,10 +259,11 @@ def get_category_colors():
 @jwt_required()
 def get_wounds_with_status():
     try:
-        # Get all wound paths
-        wound_paths = connector.get_all_wound_paths_with_status()
-        print("wound_paths sample:", wound_paths[:3])  # Debug print
-        # Format response - now includes annotators, fallback to '-' if empty
+        page = int(request.args.get('page', 1))
+        limit = int(request.args.get('limit', 20))
+        offset = (page - 1) * limit
+        wound_paths = connector.get_all_wound_paths_with_status(offset=offset, limit=limit)
+        total_count = connector.get_wound_count()
         wounds = [
             {
                 'id': path[0] if path[0] else '',
@@ -271,7 +272,8 @@ def get_wounds_with_status():
                 'annotators': path[3] if path[3] else '-'
             } for path in wound_paths
         ]
-        return jsonify(wounds), 200
+        total_pages = (total_count + limit - 1) // limit
+        return jsonify({'wounds': wounds, 'totalPages': total_pages}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
     
