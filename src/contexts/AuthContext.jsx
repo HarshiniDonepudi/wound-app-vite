@@ -1,4 +1,5 @@
 import React, { createContext, useState, useEffect } from 'react';
+import { loginUser } from '../services/authService';
 
 export const AuthContext = createContext();
 
@@ -23,20 +24,14 @@ export const AuthProvider = ({ children }) => {
     try {
       setLoading(true);
       setError(null);
-      // Call backend login
-      const res = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password })
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Login failed');
+      // Use loginUser from authService
+      const data = await loginUser(username, password);
       localStorage.setItem('token', data.access_token);
       localStorage.setItem('user', JSON.stringify(data.user));
       setCurrentUser(data.user);
       return data.user;
     } catch (err) {
-      setError(err.message || 'Failed to login');
+      setError(err.response?.data?.error || err.message || 'Failed to login');
       throw err;
     } finally {
       setLoading(false);
