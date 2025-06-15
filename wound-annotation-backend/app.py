@@ -343,33 +343,46 @@ def get_annotation_counts_by_category():
 @jwt_required()
 def add_annotator():
     user_identity = get_jwt_identity()
+    print(f"[DEBUG] JWT identity: {user_identity}")
     if user_identity['role'] != 'admin':
+        print("[DEBUG] Access denied: not admin")
         return jsonify({'error': 'Admin access required'}), 403
 
     data = request.json
+    print(f"[DEBUG] Incoming data: {data}")
     full_name = data.get('full_name')
     username = data.get('username')
     email = data.get('email')
-    if not full_name or not username or not email:
+    password = data.get('password') or ''.join(random.choices(string.ascii_letters + string.digits, k=10))
+    role = data.get('role') or 'annotator'
+    print(f"[DEBUG] full_name={full_name}, username={username}, email={email}, password={'set' if password else 'missing'}, role={role}")
+
+    if not full_name or not username or not email or not password or not role:
+        print("[DEBUG] Missing required fields")
         return jsonify({'error': 'Missing required fields'}), 400
 
-    # Generate random password
-    password = ''.join(random.choices(string.ascii_letters + string.digits, k=10))
-
     # Create user
-    user_profile = user_manager.create_user(username, password, full_name, role='annotator')
+    user_profile = user_manager.create_user(username, password, full_name, role=role)
+    print(f"[DEBUG] user_manager.create_user result: {user_profile}")
     if not user_profile:
+        print("[DEBUG] Username already exists or error occurred in user_manager.create_user")
         return jsonify({'error': 'Username already exists or error occurred'}), 400
 
     # Send email
-    subject = 'Your Annotator Account Credentials'
-    body = f"""Hello {full_name},\n\nYour annotator account has been created.\n\nUsername: {username}\nPassword: {password}\n\nPlease log in and change your password after first login."""
+    subject = f'Your {role.capitalize()} Account Credentials'
+    body = f"""Hello {full_name},\n\nYour {role} account has been created.\n\nUsername: {username}\nPassword: {password}\n\nPlease log in and change your password after first login."""
     try:
+        print(f"[DEBUG] Sending email to {email}...")
         send_email(email, subject, body)
+        print(f"[DEBUG] Email sent successfully to {email}")
     except Exception as e:
+        print(f"[DEBUG] User created but failed to send email: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return jsonify({'error': f'User created but failed to send email: {str(e)}'}), 500
 
-    return jsonify({'message': 'Annotator created and credentials sent via email.'}), 201
+    print(f"[DEBUG] Annotator created and credentials sent via email.")
+    return jsonify({'message': f'{role.capitalize()} created and credentials sent via email.'}), 201
 
 @app.route('/api/admin/users', methods=['GET'])
 @jwt_required()
