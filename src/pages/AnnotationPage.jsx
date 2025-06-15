@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useAnnotations } from '../hooks/useAnnotations';
-import { getAllWounds, getICD10Info, getPhysicianOrder } from '../services/woundService';
+import { getAllWounds } from '../services/woundService';
 
 // Import your annotation components
 import AnnotationCanvas from '../components/annotations/AnnotationCanvas';
@@ -18,26 +18,14 @@ export default function AnnotationPage() {
   const [currentWoundIndex, setCurrentWoundIndex] = useState(-1);
   const navigate = useNavigate();
   const [showSpatialFields, setShowSpatialFields] = useState(false);
-  const [showICD10, setShowICD10] = useState(false);
-  const [showPhysicianOrder, setShowPhysicianOrder] = useState(false);
-  const [icd10Info, setICD10Info] = useState(null);
-  const [physicianOrder, setPhysicianOrder] = useState(null);
-  const [icd10Loading, setICD10Loading] = useState(false);
-  const [physicianOrderLoading, setPhysicianOrderLoading] = useState(false);
-  const [icd10Error, setICD10Error] = useState(null);
-  const [physicianOrderError, setPhysicianOrderError] = useState(null);
-  const [page, setPage] = useState(1);
-  const [pageSize] = useState(20);
-  const [totalWounds, setTotalWounds] = useState(0);
 
   // Load all wounds for previous/next navigation
-  const loadAllWounds = async (pageToLoad = page) => {
+  const loadAllWounds = async () => {
     try {
-      const data = await getAllWounds(pageToLoad, pageSize);
-      setAllWounds(data.wounds);
-      setTotalWounds(data.total);
+      const wounds = await getAllWounds();
+      setAllWounds(wounds);
       // Find the index of the current wound
-      const index = data.wounds.findIndex(w => w.id.toString() === woundId.toString());
+      const index = wounds.findIndex(w => w.id.toString() === woundId.toString());
       setCurrentWoundIndex(index);
     } catch (err) {
       console.error("Error loading all wounds:", err);
@@ -45,21 +33,14 @@ export default function AnnotationPage() {
   };
 
   useEffect(() => {
-    loadAllWounds(page);
-  }, [woundId, page]);
-
-  // Pagination handlers
-  const goToNextPage = () => setPage(p => p + 1);
-  const goToPrevPage = () => setPage(p => Math.max(1, p - 1));
-  const totalPages = Math.ceil(totalWounds / pageSize);
+    loadAllWounds();
+  }, [woundId]);
 
   // Navigation handlers
   const goToPreviousWound = () => {
     if (currentWoundIndex > 0) {
       const previousWound = allWounds[currentWoundIndex - 1];
       navigate(`/annotate/${previousWound.id}`);
-    } else if (page > 1) {
-      goToPrevPage();
     }
   };
 
@@ -67,8 +48,6 @@ export default function AnnotationPage() {
     if (currentWoundIndex < allWounds.length - 1) {
       const nextWound = allWounds[currentWoundIndex + 1];
       navigate(`/annotate/${nextWound.id}`);
-    } else if (page < totalPages) {
-      goToNextPage();
     }
   };
 
@@ -131,9 +110,9 @@ export default function AnnotationPage() {
           <h1 className="page-title">Annotate Wound</h1>
           <div className="page-badges">
             <span className="badge badge--blue">ID: {woundId}</span>
-            {wound?.patient_number && (
+            {wound?.patient_id && (
               <span className="badge badge--green">
-                Patient Number: {wound.patient_number}
+                Patient ID: {wound.patient_id}
               </span>
             )}
             {annotations && annotations.length > 0 && (
@@ -147,159 +126,24 @@ export default function AnnotationPage() {
               {wound.wound_type} - {wound.body_location}
             </p>
           )}
-          {/* Spatial Fields Toggle Button and Card */}
+          {/* Spatial Fields Toggle Button */}
           {spatialFields && (
-            <div style={{marginTop: '1em'}}>
-              <button
-                onClick={() => setShowSpatialFields(v => !v)}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: '0.5em',
-                  background: '#3182ce', color: '#fff', border: 'none', borderRadius: '6px',
-                  padding: '0.5em 1.2em', fontWeight: 600, fontSize: '1em', cursor: 'pointer',
-                  boxShadow: '0 1px 4px rgba(49,130,206,0.08)',
-                  marginBottom: showSpatialFields ? '1em' : 0
-                }}
-              >
-                <span style={{fontSize: '1.2em'}}>🧭</span>
-                {showSpatialFields ? 'Hide Spatial Fields' : 'Show Spatial Fields'}
-              </button>
-              {showSpatialFields && (
-                <div style={{
-                  background: '#fff',
-                  border: '1px solid #e2e8f0',
-                  borderRadius: '10px',
-                  padding: '1.5em',
-                  marginTop: '1em',
-                  maxWidth: 420,
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
-                  fontSize: '1em',
-                }}>
-                  <div style={{display: 'flex', alignItems: 'center', marginBottom: '1em'}}>
-                    <span style={{fontSize: '1.5em', marginRight: '0.5em', color: '#3182ce'}}>🧭</span>
-                    <h4 style={{margin: 0, color: '#2d3748', fontWeight: 700, fontSize: '1.15em'}}>Wound Spatial Fields</h4>
-                  </div>
-                  <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5em 1em'}}>
-                    {Object.entries(spatialFields).map(([key, value]) => (
-                      <React.Fragment key={key}>
-                        <div style={{fontWeight: 500, color: '#4a5568', textTransform: 'capitalize'}}>
-                          {key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                        </div>
-                        <div style={{color: '#2d3748'}}>{value ?? '-'}</div>
-                      </React.Fragment>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
+            <button
+              type="button"
+              className="btn btn--outline"
+              style={{marginTop: '1em', marginBottom: '0.5em'}}
+              onClick={() => setShowSpatialFields(v => !v)}
+            >
+              {showSpatialFields ? 'Hide Spatial Fields' : 'Show Spatial Fields'}
+            </button>
           )}
-          {/* ICD-10 Info Toggle Button and Card */}
-          <div style={{marginTop: '1em'}}>
-            <button
-              onClick={async () => {
-                setShowICD10(v => {
-                  if (!icd10Info && !icd10Loading && !icd10Error && !v) {
-                    setICD10Loading(true);
-                    setICD10Error(null);
-                    getICD10Info(woundId)
-                      .then(data => setICD10Info(data))
-                      .catch(e => setICD10Error(e.message || 'Failed to load ICD-10 info'))
-                      .finally(() => setICD10Loading(false));
-                  }
-                  return !v;
-                });
-              }}
-              style={{
-                display: 'flex', alignItems: 'center', gap: '0.5em',
-                background: '#805ad5', color: '#fff', border: 'none', borderRadius: '6px',
-                padding: '0.5em 1.2em', fontWeight: 600, fontSize: '1em', cursor: 'pointer',
-                boxShadow: '0 1px 4px rgba(128,90,213,0.08)',
-                marginBottom: showICD10 ? '1em' : 0
-              }}
-            >
-              <span style={{fontSize: '1.2em'}}>🩺</span>
-              {showICD10 ? 'Hide ICD-10 Info' : 'Show ICD-10 Info'}
-            </button>
-            {showICD10 && (
-              <div style={{
-                background: '#fff',
-                border: '1px solid #e2e8f0',
-                borderRadius: '10px',
-                padding: '1.5em',
-                marginTop: '1em',
-                maxWidth: 420,
-                boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
-                fontSize: '1em',
-              }}>
-                <div style={{display: 'flex', alignItems: 'center', marginBottom: '1em'}}>
-                  <span style={{fontSize: '1.5em', marginRight: '0.5em', color: '#805ad5'}}>🩺</span>
-                  <h4 style={{margin: 0, color: '#2d3748', fontWeight: 700, fontSize: '1.15em'}}>ICD-10 Information</h4>
-                </div>
-                {icd10Loading ? <div>Loading...</div> : icd10Error ? <div style={{color:'#c53030'}}>{icd10Error}</div> : (
-                  <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5em 1em'}}>
-                    <div style={{fontWeight: 500, color: '#4a5568'}}>ICD-10 Code</div>
-                    <div style={{color: '#2d3748'}}>{icd10Info?.ICD10Code ?? '-'}</div>
-                    <div style={{fontWeight: 500, color: '#4a5568'}}>Description</div>
-                    <div style={{color: '#2d3748'}}>{icd10Info?.ICDShortDescription ?? '-'}</div>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-          {/* Physician Order Toggle Button and Card */}
-          <div style={{marginTop: '1em'}}>
-            <button
-              onClick={async () => {
-                setShowPhysicianOrder(v => {
-                  if (!physicianOrder && !physicianOrderLoading && !physicianOrderError && !v) {
-                    setPhysicianOrderLoading(true);
-                    setPhysicianOrderError(null);
-                    getPhysicianOrder(woundId)
-                      .then(data => setPhysicianOrder(data))
-                      .catch(e => setPhysicianOrderError(e.message || 'Failed to load physician order'))
-                      .finally(() => setPhysicianOrderLoading(false));
-                  }
-                  return !v;
-                });
-              }}
-              style={{
-                display: 'flex', alignItems: 'center', gap: '0.5em',
-                background: '#38a169', color: '#fff', border: 'none', borderRadius: '6px',
-                padding: '0.5em 1.2em', fontWeight: 600, fontSize: '1em', cursor: 'pointer',
-                boxShadow: '0 1px 4px rgba(56,161,105,0.08)',
-                marginBottom: showPhysicianOrder ? '1em' : 0
-              }}
-            >
-              <span style={{fontSize: '1.2em'}}>📄</span>
-              {showPhysicianOrder ? 'Hide Physician Order' : 'Show Physician Order'}
-            </button>
-            {showPhysicianOrder && (
-              <div style={{
-                background: '#fff',
-                border: '1px solid #e2e8f0',
-                borderRadius: '10px',
-                padding: '1.5em',
-                marginTop: '1em',
-                maxWidth: 420,
-                boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
-                fontSize: '1em',
-              }}>
-                <div style={{display: 'flex', alignItems: 'center', marginBottom: '1em'}}>
-                  <span style={{fontSize: '1.5em', marginRight: '0.5em', color: '#38a169'}}>📄</span>
-                  <h4 style={{margin: 0, color: '#2d3748', fontWeight: 700, fontSize: '1.15em'}}>Physician Order</h4>
-                </div>
-                {physicianOrderLoading ? <div>Loading...</div> : physicianOrderError ? <div style={{color:'#c53030'}}>{physicianOrderError}</div> : (
-                  <div style={{color: '#2d3748'}}>{physicianOrder?.PhysicianOrderDescription ?? '-'}</div>
-                )}
-              </div>
-            )}
-          </div>
         </div>
         <div className="annotation-header__right">
           {/* Navigation buttons */}
           <div className="annotation-nav-buttons">
             <button
               onClick={goToPreviousWound}
-              disabled={currentWoundIndex <= 0 && page === 1}
+              disabled={currentWoundIndex <= 0}
               className="btn btn--outline"
               title="Previous wound"
             >
@@ -314,11 +158,11 @@ export default function AnnotationPage() {
               Previous
             </button>
             <span className="annotation-nav-counter">
-              Page {page} of {totalPages} | {currentWoundIndex + 1} of {allWounds.length}
+              {currentWoundIndex + 1} of {allWounds.length}
             </span>
             <button
               onClick={goToNextWound}
-              disabled={currentWoundIndex >= allWounds.length - 1 && page === totalPages}
+              disabled={currentWoundIndex >= allWounds.length - 1}
               className="btn btn--outline"
               title="Next wound"
             >
@@ -420,6 +264,35 @@ export default function AnnotationPage() {
             </div>
           )}
         </div>
+
+        {/* Spatial Fields Card */}
+        {spatialFields && showSpatialFields && (
+          <div style={{
+            background: '#fff',
+            border: '1px solid #e2e8f0',
+            borderRadius: '10px',
+            padding: '1.5em',
+            marginTop: '0.5em',
+            maxWidth: 420,
+            boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+            fontSize: '1em',
+          }}>
+            <div style={{display: 'flex', alignItems: 'center', marginBottom: '1em'}}>
+              <span style={{fontSize: '1.5em', marginRight: '0.5em', color: '#3182ce'}}>🧭</span>
+              <h4 style={{margin: 0, color: '#2d3748', fontWeight: 700, fontSize: '1.15em'}}>Wound Spatial Fields</h4>
+            </div>
+            <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5em 1em'}}>
+              {Object.entries(spatialFields).map(([key, value]) => (
+                <React.Fragment key={key}>
+                  <div style={{fontWeight: 500, color: '#4a5568', textTransform: 'capitalize'}}>
+                    {key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                  </div>
+                  <div style={{color: '#2d3748'}}>{value ?? '-'}</div>
+                </React.Fragment>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

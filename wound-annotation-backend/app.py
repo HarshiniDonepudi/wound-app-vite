@@ -259,14 +259,9 @@ def get_category_colors():
 @jwt_required()
 def get_wounds_with_status():
     try:
-        # Pagination params
-        page = int(request.args.get('page', 1))
-        page_size = int(request.args.get('page_size', 20))
-        start = (page - 1) * page_size
-        end = start + page_size
         # Get all wound paths
         wound_paths = connector.get_all_wound_paths_with_status()
-        total = len(wound_paths)
+        print("wound_paths sample:", wound_paths[:3])  # Debug print
         # Format response - now includes annotators, fallback to '-' if empty
         wounds = [
             {
@@ -274,9 +269,9 @@ def get_wounds_with_status():
                 'path': path[1],
                 'annotated': bool(path[2]),
                 'annotators': path[3] if path[3] else '-'
-            } for path in wound_paths[start:end]
+            } for path in wound_paths
         ]
-        return jsonify({'wounds': wounds, 'total': total, 'page': page, 'page_size': page_size}), 200
+        return jsonify(wounds), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
     
@@ -534,30 +529,6 @@ def request_wound_omit(wound_id):
     username = user_identity['username']
     connector.add_to_omit_queue(wound_id, username)
     return jsonify({'message': 'Wound added to omit queue'}), 200
-
-@app.route('/api/wounds/<wound_id>/icd10', methods=['GET'])
-@jwt_required()
-def get_icd10_info(wound_id):
-    try:
-        wound_assessment_id = int(wound_id)
-        icd10_info = connector.get_icd10_info(wound_assessment_id)
-        if not icd10_info:
-            return jsonify({'error': 'ICD10 info not found'}), 404
-        return jsonify(icd10_info), 200
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-@app.route('/api/wounds/<wound_id>/physician-order', methods=['GET'])
-@jwt_required()
-def get_physician_order(wound_id):
-    try:
-        wound_assessment_id = int(wound_id)
-        order_info = connector.get_physician_order(wound_assessment_id)
-        if not order_info:
-            return jsonify({'error': 'Physician order not found'}), 404
-        return jsonify(order_info), 200
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
     app.run(debug=True, port=3000)
